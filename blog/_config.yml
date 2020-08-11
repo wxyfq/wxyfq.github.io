@@ -3,10 +3,10 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: 空山新雨后
-subtitle: ''
+title: wenxy的博客
+subtitle: '期待进步，期待改变'
 description: ''
-keywords:
+keywords: 技术分享
 author: wenxy
 language: zh-CN
 timezone: ''
@@ -98,7 +98,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: landscape
+theme: matery
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
