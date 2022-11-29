@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>ffplay源码解析（二）：VideoState结构体 | wenxy的博客</title>
+    <title>ffplay源码解析（三）：PacketQueue | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/5.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/19.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">ffplay源码解析（二）：VideoState结构体</h1>
+                    <h1 class="description center-align post-title">ffplay源码解析（三）：PacketQueue</h1>
                 </div>
             </div>
         </div>
@@ -277,7 +277,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.1k
+                    1.2k
                 </div>
                 
 
@@ -309,12 +309,23 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>VideoState结构体是ffplay源码里最重要也是最庞大的一个结构体，可以说是“包罗万象”，整个源码读下来给人的感觉就是只要是需要在函数间传递的参数，都会被放进这个结构体，然后相关的函数之间传VideoState的指针就好。这样做的好处是不用费力为每个函数想不同的参数名，后期增删参数时只需要修改VideoState结构体以及使用到该参数的某几行代码而不用修改所有相关函数的调用。坏处就是代码的耦合度太高了，不过对于单个源文件写完所有功能的ffplay来说，这并不算是什么大问题。</p>
-<p>VideoState结构体的注释如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">VideoState</span> &#123;</span><br><span class="line">  SDL_Thread *read_tid;<span class="comment">//读线程id</span></span><br><span class="line">  <span class="type">const</span> AVInputFormat *iformat;<span class="comment">//输入文件格式</span></span><br><span class="line">  <span class="type">int</span> abort_request;<span class="comment">//为1时，读线程退出</span></span><br><span class="line">  <span class="type">int</span> force_refresh;<span class="comment">//强制刷新标志位</span></span><br><span class="line">  <span class="type">int</span> paused;<span class="comment">//播放暂停标志位</span></span><br><span class="line">  <span class="type">int</span> last_paused;<span class="comment">//上一次设置的paused标志位</span></span><br><span class="line">  <span class="type">int</span> queue_attachments_req;<span class="comment">//请求流中的附加信息（如封面图片）的标志位</span></span><br><span class="line">  <span class="type">int</span> seek_req;<span class="comment">//查找请求</span></span><br><span class="line">  <span class="type">int</span> seek_flags;<span class="comment">//指定查找行为的标志位</span></span><br><span class="line">  <span class="type">int64_t</span> seek_pos;<span class="comment">//查找位置</span></span><br><span class="line">  <span class="type">int64_t</span> seek_rel;<span class="comment">//查找粒度</span></span><br><span class="line">  <span class="type">int</span> read_pause_return;<span class="comment">//保存av_read_pause()函数的返回值</span></span><br><span class="line">  AVFormatContext *ic;</span><br><span class="line">  <span class="type">int</span> realtime;<span class="comment">//是否是实时流</span></span><br><span class="line"></span><br><span class="line">  Clock audclk;<span class="comment">//音频流时钟</span></span><br><span class="line">  Clock vidclk;<span class="comment">//视频流时钟</span></span><br><span class="line">  Clock extclk;<span class="comment">//外部时钟</span></span><br><span class="line"></span><br><span class="line">  FrameQueue pictq;<span class="comment">//视频流的帧队列</span></span><br><span class="line">  FrameQueue subpq;<span class="comment">//字幕流的帧队列</span></span><br><span class="line">  FrameQueue sampq;<span class="comment">//音频流的帧队列</span></span><br><span class="line"></span><br><span class="line">  Decoder auddec;<span class="comment">//音频解码器</span></span><br><span class="line">  Decoder viddec;<span class="comment">//视频解码器</span></span><br><span class="line">  Decoder subdec;<span class="comment">//字幕解码器</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> audio_stream;<span class="comment">//音频流序号</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> av_sync_type;<span class="comment">//音视频同步模式</span></span><br><span class="line"></span><br><span class="line">  <span class="type">double</span> audio_clock;<span class="comment">//音频时钟数值</span></span><br><span class="line">  <span class="type">int</span> audio_clock_serial;<span class="comment">//音频时钟序列号</span></span><br><span class="line">  <span class="type">double</span> audio_diff_cum; <span class="comment">/* used for AV difference average computation */</span></span><br><span class="line">  <span class="type">double</span> audio_diff_avg_coef;</span><br><span class="line">  <span class="type">double</span> audio_diff_threshold;</span><br><span class="line">  <span class="type">int</span> audio_diff_avg_count;<span class="comment">//以上几个值用于计算音频重采样的样本数</span></span><br><span class="line">  AVStream *audio_st;<span class="comment">//指向音频流的指针</span></span><br><span class="line">  PacketQueue audioq;<span class="comment">//音频流的包队列</span></span><br><span class="line">  <span class="type">int</span> audio_hw_buf_size;<span class="comment">//硬件支持的音频缓冲区大小</span></span><br><span class="line">  <span class="type">uint8_t</span> *audio_buf;<span class="comment">//指向储存音频数据的缓冲区</span></span><br><span class="line">  <span class="type">uint8_t</span> *audio_buf1;<span class="comment">//指向储存音频数据的缓冲区</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> audio_buf_size; <span class="comment">/* in bytes */</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> audio_buf1_size;<span class="comment">//缓冲区大小</span></span><br><span class="line">  <span class="type">int</span> audio_buf_index; <span class="comment">/* 音频缓冲区读取位置 in bytes */</span></span><br><span class="line">  <span class="type">int</span> audio_write_buf_size;<span class="comment">//音频缓冲区中可写区域的大小</span></span><br><span class="line">  <span class="type">int</span> audio_volume;<span class="comment">//音量值</span></span><br><span class="line">  <span class="type">int</span> muted;<span class="comment">//是否静音</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_src;<span class="comment">//音频参数</span></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_AVFILTER</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_filter_src;<span class="comment">//滤镜处理后的音频参数</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_tgt;<span class="comment">//硬件支持的音频参数</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwrContext</span> *swr_ctx;<span class="comment">//音频重采样上下文</span></span><br><span class="line">  <span class="type">int</span> frame_drops_early;<span class="comment">//解码过程中的丢帧数</span></span><br><span class="line">  <span class="type">int</span> frame_drops_late;<span class="comment">//渲染过程中的丢帧数</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">enum</span> <span class="title class_">ShowMode</span> &#123;</span><br><span class="line">    SHOW_MODE_NONE = <span class="number">-1</span>, SHOW_MODE_VIDEO = <span class="number">0</span>, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB</span><br><span class="line">  &#125; show_mode;<span class="comment">//显示模式，分为视频模式，波形图模式以及频谱图</span></span><br><span class="line">  <span class="type">int16_t</span> sample_array[SAMPLE_ARRAY_SIZE];<span class="comment">//音频样本数组</span></span><br><span class="line">  <span class="type">int</span> sample_array_index;<span class="comment">//样本数组的读取位置</span></span><br><span class="line">  <span class="type">int</span> last_i_start;</span><br><span class="line">  RDFTContext *rdft;<span class="comment">//实时傅里叶变换上下文</span></span><br><span class="line">  <span class="type">int</span> rdft_bits;</span><br><span class="line">  FFTSample *rdft_data;</span><br><span class="line">  <span class="type">int</span> xpos;</span><br><span class="line">  <span class="type">double</span> last_vis_time;</span><br><span class="line">  SDL_Texture *vis_texture;<span class="comment">//用于渲染音频图像的纹理结构体指针</span></span><br><span class="line">  SDL_Texture *sub_texture;<span class="comment">//用于渲染字幕的纹理结构体指针</span></span><br><span class="line">  SDL_Texture *vid_texture;<span class="comment">//用于渲染视频的纹理结构体指针</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> subtitle_stream;<span class="comment">//字幕流序号</span></span><br><span class="line">  AVStream *subtitle_st;<span class="comment">//指向字幕流的指针</span></span><br><span class="line">  PacketQueue subtitleq;<span class="comment">//字幕流的包队列</span></span><br><span class="line"></span><br><span class="line">  <span class="type">double</span> frame_timer;<span class="comment">//帧计时器</span></span><br><span class="line">  <span class="type">double</span> frame_last_returned_time;</span><br><span class="line">  <span class="type">double</span> frame_last_filter_delay;</span><br><span class="line">  <span class="type">int</span> video_stream;<span class="comment">//视频流序号</span></span><br><span class="line">  AVStream *video_st;<span class="comment">//视频流指针</span></span><br><span class="line">  PacketQueue videoq;<span class="comment">//视频流包队列</span></span><br><span class="line">  <span class="type">double</span> max_frame_duration; <span class="comment">//单个帧最大的持续时间   // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwsContext</span> *img_convert_ctx;</span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwsContext</span> *sub_convert_ctx;</span><br><span class="line">  <span class="type">int</span> eof;<span class="comment">//文件结束标志位</span></span><br><span class="line"></span><br><span class="line">  <span class="type">char</span> *filename;<span class="comment">//文件名</span></span><br><span class="line">  <span class="type">int</span> width, height, xleft, ytop;<span class="comment">//窗口的位置和大小</span></span><br><span class="line">  <span class="type">int</span> step;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_AVFILTER</span></span><br><span class="line">  <span class="type">int</span> vfilter_idx;</span><br><span class="line">  AVFilterContext *in_video_filter;   <span class="comment">// the first filter in the video chain</span></span><br><span class="line">  AVFilterContext *out_video_filter;  <span class="comment">// the last filter in the video chain</span></span><br><span class="line">  AVFilterContext *in_audio_filter;   <span class="comment">// the first filter in the audio chain</span></span><br><span class="line">  AVFilterContext *out_audio_filter;  <span class="comment">// the last filter in the audio chain</span></span><br><span class="line">  AVFilterGraph *agraph;              <span class="comment">// audio filter graph</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> last_video_stream, last_audio_stream, last_subtitle_stream;<span class="comment">//上一次使用的流，用于循环播放</span></span><br><span class="line"></span><br><span class="line">  SDL_cond *continue_read_thread;<span class="comment">//控制读线程是否继续读的条件变量</span></span><br><span class="line">&#125; VideoState;</span><br></pre></td></tr></table></figure>
+                <p>ffmpeg库解析音视频数据的顺序是先解封装（demuxing）再解码（decoding），其中解封装是从原始数据中分离出不同的数据流，如音频流，视频流等。解码是将从音视频流中读取的压缩数据解析成音视频输出设备可以识别的数据格式，音频如PCM，视频如YUV420P等。ffmpeg相关库的实现中，负责保存压缩数据的数据结构为struct AVPacket，负责保存解码后数据的数据结构为struct AVFrame。ffplay为存放这两种类型的数据创建了两个队列，存放AVPacket的队列就是本章介绍的PacketQueue，存放AVFrame的队列是我们下一章要介绍的FrameQueue；</p>
+<p>先来看一下PacketQueue相关的结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">MyAVPacketList</span> &#123;</span></span><br><span class="line">  AVPacket *pkt;<span class="comment">//压缩的包数据</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//包序列号，跟所在的包序列的序列号一致</span></span><br><span class="line">&#125; MyAVPacketList;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">PacketQueue</span> &#123;</span></span><br><span class="line">  AVFifoBuffer *pkt_list;<span class="comment">//先进先出队列</span></span><br><span class="line">  <span class="type">int</span> nb_packets;<span class="comment">//队列中包的数量</span></span><br><span class="line">  <span class="type">int</span> size;<span class="comment">//队列大小</span></span><br><span class="line">  <span class="type">int64_t</span> duration;<span class="comment">//队列中数据的播放持续时间</span></span><br><span class="line">  <span class="type">int</span> abort_request;<span class="comment">//结束请求</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//序列号，用于标识一段连续数据</span></span><br><span class="line">  SDL_mutex *mutex;<span class="comment">//线程互斥量</span></span><br><span class="line">  SDL_cond *cond;<span class="comment">//线程条件变量</span></span><br><span class="line">&#125; PacketQueue;</span><br></pre></td></tr></table></figure>
 
-<p>结构体中某些参数单从注释上很难理解其具体含义，所以在之后的源码分析中我们会反复回来看这个结构体的内容。</p>
-<p>在分析具体代码逻辑之前，我们需要知道ffplay中用到的两个队列的用法：PacketQueue，FrameQueue。</p>
+<p>PacketQueue结构体中各个参数的含义已经在注释中写明，PacketQueue的操作函数有以下几个：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_private</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_nullpacket</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> stream_index)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_init</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_flush</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_destroy</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_abort</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_start</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_get</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> block, <span class="type">int</span> *serial)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>packet_queue_init用memset函数将结构体所在内存以0初始化，这样可以将结构体中int类型的值初始化为0。然后创建一个fifo队列和用于线程同步的互斥量以及条件变量，最后将abort_request设置为1表示队列当前状态不可用；</p>
+<p>packet_queue_flush函数将队列中数据清空，serial值加1，这些操作都在上锁状态下执行，相同的serial值表明这些数据是一段连续的内容，flush操作清空并丢弃了队列中还未被读取的数据，所以通过serial加1来表示接下来的数据跟之前的数据表示的已经不是连续的内容了；</p>
+<p>packet_queue_destory调用flush函数清空数据，然后销毁fifo队列，以及互斥量和条件变量；</p>
+<p>packet_queue_abort在上锁状态下将abort_request设置为1，并调用SDL_ConSignal()函数通知条件变量；</p>
+<p>packet_queue_start函数在上锁状态下将abort_request设置为0，serial加1；</p>
+<p>packet_queue_get是唯一的读取函数接受四个参数，第一个参数q指定PacketQueue，第二个参数pkt是一个指向AVPacket的指针，用于存储从q中读出的数据，第三个参数表示是否为阻塞模式，如果为0，那么当队列中没有数据时，函数会立即返回，否则将会调用SDL_CondWait()等待直到队列中有数据。第四个参数是一个传入的int变量地址，从fifo队列中读取的MyAVPacketList类型数据包含AVPacket类型的数据和一个序列号，这个序列号会被传给第四个参数指定的int变量。</p>
+<p>packet_queue_put_private函数负责将参数pkt指向的AVPacket类型的数据连同队列q的序列号一起包装成一个MyAVPacketList类型数据写入fifo队列，然后将nb_packets加1，size加上MyAVPacketList的大小和其指向的AVPacket的大小，duration加上AVPacket的duration。写入成功后调用SDL_CondSignal()通知条件变量。该函数是执行具体写入动作的函数，只是供packet_queue_put函数调用，所以函数中没有上锁。</p>
+<p>packet_queue_put检查参数pkt指定的数据是否为null，不为null时才在上锁状态下调用packet_queue_put_private执行真正的写入。</p>
+<p>packet_queue_put_nullpacket用于向队列中写入一个没有数据的AVPecket包，设置了pkg的stream_index后直接调用packet_queue_put。该函数存在的意义是一个空包可以作为一个刷新包通知解码器已经到达流结束的位置了，解码器读到刷新包后会将缓存的帧数据返回。</p>
+<p>分析完所有函数的功能，我们做一个简短的总结。PacketQueue中维护了一个fifo队列，队列中存储MyAVPacketList类型数据而不直接存储AVPacket类型数据的原因是需要为每个包添加一个序列号，这个序列号在包被放入队列时会被设置为队列的序列号，序列号用于标识一段连续的内容，如果两个包的序列号不同，说明他们所表示的内容时间上不连续。需要互斥量和条件变量的原因是队列的读写操作分别在不同线程，需要线程同步。</p>
 
                 
             </div>
@@ -341,7 +352,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/">http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/</a>
+                    <a href="http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -558,9 +569,10 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">
                     <div class="card-image">
@@ -578,9 +590,9 @@
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-29
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-29
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -593,6 +605,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -619,24 +632,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/11/27/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9Amain%E5%87%BD%E6%95%B0/">
+                <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="ffplay源码解析（一）：main函数">
+                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="ffplay源码解析（二）：VideoState结构体">
                         
-                        <span class="card-title">ffplay源码解析（一）：main函数</span>
+                        <span class="card-title">ffplay源码解析（二）：VideoState结构体</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中main函数的结构和功能
+                            解析ffplay源码中VideoState结构体
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-27
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-29
                             </span>
                         <span class="publish-author">
                             
