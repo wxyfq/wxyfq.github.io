@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>ffplay源码解析（三）：PacketQueue | wenxy的博客</title>
+    <title>ffplay源码解析（四）：FrameQueue | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/19.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/14.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">ffplay源码解析（三）：PacketQueue</h1>
+                    <h1 class="description center-align post-title">ffplay源码解析（四）：FrameQueue</h1>
                 </div>
             </div>
         </div>
@@ -263,28 +263,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-11-29
+                    2022-11-30
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-11-30
+                    2022-12-01
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.2k
+                    2.4k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    4 分
+                    10 分
                 </div>
                 
 
@@ -309,23 +309,46 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>ffmpeg库解析音视频数据的顺序是先解封装（demuxing）再解码（decoding），其中解封装是从原始数据中分离出不同的数据流，如音频流，视频流等。解码是将从音视频流中读取的压缩数据解析成音视频输出设备可以识别的数据格式，音频如PCM，视频如YUV420P等。ffmpeg相关库的实现中，负责保存压缩数据的数据结构为struct AVPacket，负责保存解码后数据的数据结构为struct AVFrame。ffplay为存放这两种类型的数据创建了两个队列，存放AVPacket的队列就是本章介绍的PacketQueue，存放AVFrame的队列是我们下一章要介绍的FrameQueue；</p>
-<p>先来看一下PacketQueue相关的结构体：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">MyAVPacketList</span> &#123;</span></span><br><span class="line">  AVPacket *pkt;<span class="comment">//压缩的包数据</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//包序列号，跟所在的包序列的序列号一致</span></span><br><span class="line">&#125; MyAVPacketList;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">PacketQueue</span> &#123;</span></span><br><span class="line">  AVFifoBuffer *pkt_list;<span class="comment">//先进先出队列</span></span><br><span class="line">  <span class="type">int</span> nb_packets;<span class="comment">//队列中包的数量</span></span><br><span class="line">  <span class="type">int</span> size;<span class="comment">//队列大小</span></span><br><span class="line">  <span class="type">int64_t</span> duration;<span class="comment">//队列中数据的播放持续时间</span></span><br><span class="line">  <span class="type">int</span> abort_request;<span class="comment">//结束请求</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//序列号，用于标识一段连续数据</span></span><br><span class="line">  SDL_mutex *mutex;<span class="comment">//线程互斥量</span></span><br><span class="line">  SDL_cond *cond;<span class="comment">//线程条件变量</span></span><br><span class="line">&#125; PacketQueue;</span><br></pre></td></tr></table></figure>
+                <p>FrameQueue是用于保存AVFrame数据的队列，同样的为了能够增加额外的参数，AVFrame与其他额外参数被封装成一个新的结构体Frame，FrameQueue中保存的就是Frame类型的数据。Frame和FrameQueue结构体代码注释如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Frame</span> &#123;</span></span><br><span class="line">  AVFrame *frame;<span class="comment">//指向帧结构体变量的指针</span></span><br><span class="line">  AVSubtitle sub;<span class="comment">//字幕结构体变量</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//序列号</span></span><br><span class="line">  <span class="type">double</span> pts;<span class="comment">//这一帧展示的时间点</span></span><br><span class="line">  <span class="type">double</span> duration;<span class="comment">//这一帧内容的持续时间</span></span><br><span class="line">  <span class="type">int64_t</span> pos;<span class="comment">//这一帧在输入文件中的位置</span></span><br><span class="line">  <span class="type">int</span> width;<span class="comment">//画面的宽度</span></span><br><span class="line">  <span class="type">int</span> height;<span class="comment">//画面的高度</span></span><br><span class="line">  <span class="type">int</span> format;<span class="comment">//格式</span></span><br><span class="line">  AVRational sar;<span class="comment">//横向像素点与纵向像素点数量的比值</span></span><br><span class="line">  <span class="type">int</span> uploaded;<span class="comment">//是否已经渲染到输出设备</span></span><br><span class="line">  <span class="type">int</span> flip_v;<span class="comment">//垂直翻转</span></span><br><span class="line">&#125; Frame;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">FrameQueue</span> &#123;</span></span><br><span class="line">  Frame <span class="built_in">queue</span>[FRAME_QUEUE_SIZE];<span class="comment">//保存Frame格式数据的数组</span></span><br><span class="line">  <span class="type">int</span> rindex;<span class="comment">//读指针</span></span><br><span class="line">  <span class="type">int</span> windex;<span class="comment">//写指针</span></span><br><span class="line">  <span class="type">int</span> size;<span class="comment">//未读帧数</span></span><br><span class="line">  <span class="type">int</span> max_size;<span class="comment">//队列中能保存的最大帧数</span></span><br><span class="line">  <span class="type">int</span> keep_last;<span class="comment">//是否保留上一帧</span></span><br><span class="line">  <span class="type">int</span> rindex_shown;<span class="comment">//用于标识保留帧</span></span><br><span class="line">  SDL_mutex *mutex;<span class="comment">//互斥量</span></span><br><span class="line">  SDL_cond *cond;<span class="comment">//用于读写同步的条件变量</span></span><br><span class="line">  PacketQueue *pktq;<span class="comment">//包队列指针</span></span><br><span class="line">&#125; FrameQueue;</span><br></pre></td></tr></table></figure>
 
-<p>PacketQueue结构体中各个参数的含义已经在注释中写明，PacketQueue的操作函数有以下几个：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_private</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_nullpacket</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> stream_index)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_init</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_flush</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_destroy</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_abort</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_start</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_get</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> block, <span class="type">int</span> *serial)</span>;</span><br></pre></td></tr></table></figure>
+<p>FrameQueue通过一个固定长度的数组以及两个读写指针实现了一个循环队列，当需要从队列中读取数据或向队列中写入数据时，队列会返回一个指向可读或可写位置的指针，然后调用者可以通过指针进行读写操作。</p>
+<p>FrameQueue的操作函数有如下几个：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">frame_queue_unref_item</span><span class="params">(Frame *vp)</span></span><br><span class="line">&#123;</span><br><span class="line">  av_frame_unref(vp-&gt;frame);<span class="comment">//释放所有跟frame关联的buffer并重置frame中所有字段的值</span></span><br><span class="line">  avsubtitle_free(&amp;vp-&gt;sub);<span class="comment">//释放sub中分配的数据</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>packet_queue_init用memset函数将结构体所在内存以0初始化，这样可以将结构体中int类型的值初始化为0。然后创建一个fifo队列和用于线程同步的互斥量以及条件变量，最后将abort_request设置为1表示队列当前状态不可用；</p>
-<p>packet_queue_flush函数将队列中数据清空，serial值加1，这些操作都在上锁状态下执行，相同的serial值表明这些数据是一段连续的内容，flush操作清空并丢弃了队列中还未被读取的数据，所以通过serial加1来表示接下来的数据跟之前的数据表示的已经不是连续的内容了；</p>
-<p>packet_queue_destory调用flush函数清空数据，然后销毁fifo队列，以及互斥量和条件变量；</p>
-<p>packet_queue_abort在上锁状态下将abort_request设置为1，并调用SDL_ConSignal()函数通知条件变量；</p>
-<p>packet_queue_start函数在上锁状态下将abort_request设置为0，serial加1；</p>
-<p>packet_queue_get是唯一的读取函数接受四个参数，第一个参数q指定PacketQueue，第二个参数pkt是一个指向AVPacket的指针，用于存储从q中读出的数据，第三个参数表示是否为阻塞模式，如果为0，那么当队列中没有数据时，函数会立即返回，否则将会调用SDL_CondWait()等待直到队列中有数据。第四个参数是一个传入的int变量地址，从fifo队列中读取的MyAVPacketList类型数据包含AVPacket类型的数据和一个序列号，这个序列号会被传给第四个参数指定的int变量。</p>
-<p>packet_queue_put_private函数负责将参数pkt指向的AVPacket类型的数据连同队列q的序列号一起包装成一个MyAVPacketList类型数据写入fifo队列，然后将nb_packets加1，size加上MyAVPacketList的大小和其指向的AVPacket的大小，duration加上AVPacket的duration。写入成功后调用SDL_CondSignal()通知条件变量。该函数是执行具体写入动作的函数，只是供packet_queue_put函数调用，所以函数中没有上锁。</p>
-<p>packet_queue_put检查参数pkt指定的数据是否为null，不为null时才在上锁状态下调用packet_queue_put_private执行真正的写入。</p>
-<p>packet_queue_put_nullpacket用于向队列中写入一个没有数据的AVPecket包，设置了pkg的stream_index后直接调用packet_queue_put。该函数存在的意义是一个空包可以作为一个刷新包通知解码器已经到达流结束的位置了，解码器读到刷新包后会将缓存的帧数据返回。</p>
-<p>分析完所有函数的功能，我们做一个简短的总结。PacketQueue中维护了一个fifo队列，队列中存储MyAVPacketList类型数据而不直接存储AVPacket类型数据的原因是需要为每个包添加一个序列号，这个序列号在包被放入队列时会被设置为队列的序列号，序列号用于标识一段连续的内容，如果两个包的序列号不同，说明他们所表示的内容时间上不连续。需要互斥量和条件变量的原因是队列的读写操作分别在不同线程，需要线程同步。</p>
+<p>这个函数用于释放Frame结构体变量中的AVFrame和AVSubtitle成员变量关联的数据，注意只是释放关联的数据，而不是销毁结构体变量，这一步的作用是重置Frame。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">frame_queue_init</span><span class="params">(FrameQueue *f, PacketQueue *pktq, <span class="type">int</span> max_size, <span class="type">int</span> keep_last)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">int</span> i;</span><br><span class="line">  <span class="built_in">memset</span>(f, <span class="number">0</span>, <span class="keyword">sizeof</span>(FrameQueue));</span><br><span class="line">  <span class="keyword">if</span> (!(f-&gt;mutex = SDL_CreateMutex())) &#123;</span><br><span class="line">    av_log(<span class="literal">NULL</span>, AV_LOG_FATAL, <span class="string">&quot;SDL_CreateMutex(): %s\n&quot;</span>, SDL_GetError());</span><br><span class="line">    <span class="keyword">return</span> AVERROR(ENOMEM);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (!(f-&gt;cond = SDL_CreateCond())) &#123;</span><br><span class="line">    av_log(<span class="literal">NULL</span>, AV_LOG_FATAL, <span class="string">&quot;SDL_CreateCond(): %s\n&quot;</span>, SDL_GetError());</span><br><span class="line">    <span class="keyword">return</span> AVERROR(ENOMEM);</span><br><span class="line">  &#125;</span><br><span class="line">  f-&gt;pktq = pktq;<span class="comment">//关联PacketQueue</span></span><br><span class="line">  f-&gt;max_size = FFMIN(max_size, FRAME_QUEUE_SIZE);</span><br><span class="line">  f-&gt;keep_last = !!keep_last;<span class="comment">//keep_last的值为0或1</span></span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; f-&gt;max_size; i++)<span class="comment">//初始化队列数据</span></span><br><span class="line">    <span class="keyword">if</span> (!(f-&gt;<span class="built_in">queue</span>[i].frame = av_frame_alloc()))</span><br><span class="line">      <span class="keyword">return</span> AVERROR(ENOMEM);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>队列的初始化函数，与PacketQueue一样，也是使用memset()将所有内置类型的变量初始化为0。然后创建用于线程同步的互斥量以及条件变量，关联PacketQueue，设置队列最大成员数量，keep_last通过一个小技巧将输入值转换为0或1，保证所有非零输入都被转换为1保存，最后使用av_frame_alloc()初始化所有数组成员，该函数会创建一个AVFrame并设置默认值。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">frame_queue_destory</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">int</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; f-&gt;max_size; i++) &#123;</span><br><span class="line">    Frame *vp = &amp;f-&gt;<span class="built_in">queue</span>[i];</span><br><span class="line">    frame_queue_unref_item(vp);</span><br><span class="line">    av_frame_free(&amp;vp-&gt;frame);</span><br><span class="line">  &#125;</span><br><span class="line">  SDL_DestroyMutex(f-&gt;mutex);</span><br><span class="line">  SDL_DestroyCond(f-&gt;cond);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>销毁函数，销毁队列中所有数据，针对每个数组成员，先调用frame_queue_unref_item销毁关联数据，再调用av_frame_free销毁AVFrame本身，AVSubtitle由于分配在栈上，所以不需要手动销毁。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">frame_queue_signal</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  SDL_LockMutex(f-&gt;mutex);</span><br><span class="line">  SDL_CondSignal(f-&gt;cond);</span><br><span class="line">  SDL_UnlockMutex(f-&gt;mutex);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>发送同步信号，唤醒等待条件变量的线程。</p>
+<p>接下来是重头戏，队列的读写函数，我们先分析逻辑较为简单的写操作</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> Frame *<span class="title function_">frame_queue_peek_writable</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">/* wait until we have space to put a new frame */</span></span><br><span class="line">  SDL_LockMutex(f-&gt;mutex);</span><br><span class="line">  <span class="keyword">while</span> (f-&gt;size &gt;= f-&gt;max_size &amp;&amp;</span><br><span class="line">      !f-&gt;pktq-&gt;abort_request) &#123;</span><br><span class="line">    SDL_CondWait(f-&gt;cond, f-&gt;mutex);</span><br><span class="line">  &#125;</span><br><span class="line">  SDL_UnlockMutex(f-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (f-&gt;pktq-&gt;abort_request)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> &amp;f-&gt;<span class="built_in">queue</span>[f-&gt;windex];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">frame_queue_push</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (++f-&gt;windex == f-&gt;max_size)</span><br><span class="line">    f-&gt;windex = <span class="number">0</span>;</span><br><span class="line">  SDL_LockMutex(f-&gt;mutex);</span><br><span class="line">  f-&gt;size++;</span><br><span class="line">  SDL_CondSignal(f-&gt;cond);</span><br><span class="line">  SDL_UnlockMutex(f-&gt;mutex);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>frame_queue_peek_writable返回写指针指向的数组成员，在返回之前函数会先检查队列是否已满，由于是循环队列，队列已满的意思就是队列中所有成员都已被写入数据切这些数据都还未被读取，如果此时未经检查直接写入新的数据，那么当前数组中最早被写入的数据就会被覆盖。检查的手段也很简单，只需要检查size是否大于或等于max_size即可。当队列中有可写空间时，返回写指针指向的数据成员。写入成功后需要将写指针向前移动一位，如果移动后的索引值超过了最大索引值，就将写指针的索引设为0，从而实现对数组的循环写入。接下来将size加1,并发送通知唤醒等待条件变量的线程，由于size值在读写线程中都会被修改，所以需要在加锁的情况下更新。</p>
+<p>写操作的逻辑简单总结就是，找到可写位置，写入数据，更新未读节点数量，然后发送通知唤醒还在等待的线程。</p>
+<p>相比写操作，读操作的逻辑相对复杂，主要是因为涉及到保留上一帧这一操作，我们看一下具体代码。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> Frame *<span class="title function_">frame_queue_peek</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;f-&gt;<span class="built_in">queue</span>[(f-&gt;rindex + f-&gt;rindex_shown) % f-&gt;max_size];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> Frame *<span class="title function_">frame_queue_peek_next</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;f-&gt;<span class="built_in">queue</span>[(f-&gt;rindex + f-&gt;rindex_shown + <span class="number">1</span>) % f-&gt;max_size];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> Frame *<span class="title function_">frame_queue_peek_last</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;f-&gt;<span class="built_in">queue</span>[f-&gt;rindex];</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> Frame *<span class="title function_">frame_queue_peek_readable</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">/* wait until we have a readable a new frame */</span></span><br><span class="line">  SDL_LockMutex(f-&gt;mutex);</span><br><span class="line">  <span class="keyword">while</span> (f-&gt;size - f-&gt;rindex_shown &lt;= <span class="number">0</span> &amp;&amp;</span><br><span class="line">      !f-&gt;pktq-&gt;abort_request) &#123;</span><br><span class="line">    SDL_CondWait(f-&gt;cond, f-&gt;mutex);</span><br><span class="line">  &#125;</span><br><span class="line">  SDL_UnlockMutex(f-&gt;mutex);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (f-&gt;pktq-&gt;abort_request)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> &amp;f-&gt;<span class="built_in">queue</span>[(f-&gt;rindex + f-&gt;rindex_shown) % f-&gt;max_size];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先是读取函数，三个简单的读取函数分别用来读取当前结点，读取下一个节点以及读取上一个节点，还有一个实现更复杂的读取可读节点，该函数与普通的读取当前节点的函数的不同点在于frame_queue_peek_readable是读取还未读取的节点，而frame_queue_peek则只是读取当前节点而不检查当前节点是否已经被读取过。读取未读节点需要满足两个条件：1、队列中存在未读节点；2、关联的PacketQueue没有终止。如果条件1未被满足，函数会阻塞直到被条件变量的通知唤醒；如果条件2未被满足，函数返回NULL；如果两者都被满足，则返回当前节点，使用与普通读取函数相同的操作。</p>
+<p>我们注意到，计算当前节点索引的方式有些特别，是用rindex+rindex_shown的和对max_size取模，所以严格来说rindex并不是读指针的索引值，rindex+rindex_shown才是。那么rindex_shown又是什么值呢？我们先看下面的代码:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">frame_queue_next</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (f-&gt;keep_last &amp;&amp; !f-&gt;rindex_shown) &#123;</span><br><span class="line">    f-&gt;rindex_shown = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  frame_queue_unref_item(&amp;f-&gt;<span class="built_in">queue</span>[f-&gt;rindex]);</span><br><span class="line">  <span class="keyword">if</span> (++f-&gt;rindex == f-&gt;max_size)</span><br><span class="line">    f-&gt;rindex = <span class="number">0</span>;</span><br><span class="line">  SDL_LockMutex(f-&gt;mutex);</span><br><span class="line">  f-&gt;size--;</span><br><span class="line">  SDL_CondSignal(f-&gt;cond);</span><br><span class="line">  SDL_UnlockMutex(f-&gt;mutex);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>与写操作写入数据成功后直接更新写指针以及size值不同，读操作在更新读指针以及size值之前需要对已读节点的数据进行释放，也就是调用frame_queue_unref_item函数。在此之前，函数先判断keep_last的值，当程序要求保留上一帧时，即keep_last的值为1时，如果rindex_shown此时的值为0，它将被设置为1。</p>
+<p>我们再回过头去看几个读函数的操作，用rindex+rindex_shown作为真正的读指针，而更新读指针销毁数据时却使用rindex，如果rindex_shown为零也就是不需要保留上一帧时，rindex等于rindex_shown，程序执行的操作就是读完一帧然后销毁刚读完的这一帧。而当rindex_shown为1时，真正的读指针是指向rindex的下一个节点的数据，那么相对于读操作来讲，刚读完一帧数据并且移动读指针时，销毁的其实是刚读的这一帧的上一帧数据，刚读过的这一帧数据得以保留。</p>
+<p>我们再来看一下frame_queue_peek_readable函数中判断当前队列中是否存在未读结点使用的判断条件是</p>
+<p><code>f-&gt;size - f-&gt;rindex_shown &lt;= 0</code></p>
+<p>我们再来带入一下两种情况，当rindex_shown等于0即不需要保留上一帧数据时，判断条件相当于size&lt;&#x3D;0，这很好理解。当rindex_shown等于1即需要保留上一帧数据是，判断条件相当于size&lt;&#x3D;1,这是因为size表示的是未读结点的数量，而当rindex_shown等于1时，上一帧的数据是已读未擦除状态，所以在这种情况下当size等于1时，剩下的这一帧数据已经被读过了。</p>
+<p>剩下两个函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">frame_queue_nb_remaining</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> f-&gt;size - f-&gt;rindex_shown;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int64_t</span> <span class="title function_">frame_queue_last_pos</span><span class="params">(FrameQueue *f)</span></span><br><span class="line">&#123;</span><br><span class="line">  Frame *fp = &amp;f-&gt;<span class="built_in">queue</span>[f-&gt;rindex];</span><br><span class="line">  <span class="keyword">if</span> (f-&gt;rindex_shown &amp;&amp; fp-&gt;serial == f-&gt;pktq-&gt;serial)</span><br><span class="line">    <span class="keyword">return</span> fp-&gt;pos;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>frame_queue_nb_remaining返回队列中未被读取的值，为什么用size-rindex_shown，因为如果有保留帧，那么跟rindex同步更新的size值一定会比实际的未读取的节点数量值大1。</p>
+<p>frame_queue_last_pos返回上一帧的位置，只有队列有保留帧的时候该函数才会返回上一帧的位置，否则返回-1。</p>
+<p>ffplay中需要保留上一帧的流只有视频流，这样设计的用意在接下来分析显示线程时我们会逐步了解，目前我们只需要知道原理即可。</p>
 
                 
             </div>
@@ -352,7 +375,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/</a>
+                    <a href="http://example.com/2022/11/30/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89%EF%BC%9AFrameQueue/">http://example.com/2022/11/30/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89%EF%BC%9AFrameQueue/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -569,9 +592,10 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2022/11/30/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89%EF%BC%9AFrameQueue/">
                     <div class="card-image">
@@ -589,9 +613,9 @@
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-30
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-30
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -604,6 +628,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -630,19 +655,19 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/">
+                <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="ffplay源码解析（二）：VideoState结构体">
+                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="ffplay源码解析（三）：PacketQueue">
                         
-                        <span class="card-title">ffplay源码解析（二）：VideoState结构体</span>
+                        <span class="card-title">ffplay源码解析（三）：PacketQueue</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中VideoState结构体
+                            解析ffplay源码中PacketQueue原理
                         
                     </div>
                     <div class="publish-info">
