@@ -284,7 +284,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    10 分
+                    9 分
                 </div>
                 
 
@@ -348,7 +348,7 @@
 
 <p>frame_queue_nb_remaining返回队列中未被读取的值，为什么用size-rindex_shown，因为如果有保留帧，那么跟rindex同步更新的size值一定会比实际的未读取的节点数量值大1。</p>
 <p>frame_queue_last_pos返回上一帧的位置，只有队列有保留帧的时候该函数才会返回上一帧的位置，否则返回-1。</p>
-<p>ffplay中需要保留上一帧的流只有视频流，这样设计的用意在接下来分析显示线程时我们会逐步了解，目前我们只需要知道原理即可。</p>
+<p>ffplay中需要保留上一帧的流有视频流和音频流。</p>
 
                 
             </div>
@@ -592,30 +592,29 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="far fa-dot-circle"></i>&nbsp;本篇
-            </div>
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/11/30/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89%EF%BC%9AFrameQueue/">
+                <a href="/2022/12/01/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%94%EF%BC%89%EF%BC%9A%E8%AF%BB%E7%BA%BF%E7%A8%8B/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/14.jpg" class="responsive-img" alt="ffplay源码解析（四）：FrameQueue">
+                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="ffplay源码解析（五）：读线程">
                         
-                        <span class="card-title">ffplay源码解析（四）：FrameQueue</span>
+                        <span class="card-title">ffplay源码解析（五）：读线程</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中FrameQueue
+                            解析ffplay源码中读线程是如何从流中读取数据并放入包队列的
                         
                     </div>
                     <div class="publish-info">
-                            <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-30
-                            </span>
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-01
+                        </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -628,7 +627,6 @@
                         </span>
                     </div>
                 </div>
-
                 
                 <div class="card-action article-tags">
                     
@@ -747,7 +745,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">6.5k</span>&nbsp;字
+                class="white-color">12.2k</span>&nbsp;字
             
             
             
