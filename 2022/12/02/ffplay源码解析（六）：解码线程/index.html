@@ -1,0 +1,955 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="ffplay源码解析">
+    <meta name="description" content="好记性不如烂笔头">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+    <title>ffplay源码解析（六）：解码线程 | wenxy的博客</title>
+    <link rel="icon" type="image/png" href="/me.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+
+    <script src="/libs/jquery/jquery.min.js"></script>
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+
+
+<body>
+    <header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                    <img src="/medias/logo.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">wenxy的博客</span>
+                </a>
+            </div>
+            
+
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a>
+<ul class="right nav-menu">
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/" class="waves-effect waves-light">
+      
+      <i class="fas fa-home" style="zoom: 0.6;"></i>
+      
+      <span>首页</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/tags" class="waves-effect waves-light">
+      
+      <i class="fas fa-tags" style="zoom: 0.6;"></i>
+      
+      <span>标签</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/categories" class="waves-effect waves-light">
+      
+      <i class="fas fa-bookmark" style="zoom: 0.6;"></i>
+      
+      <span>分类</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/archives" class="waves-effect waves-light">
+      
+      <i class="fas fa-archive" style="zoom: 0.6;"></i>
+      
+      <span>归档</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/about" class="waves-effect waves-light">
+      
+      <i class="fas fa-user-circle" style="zoom: 0.6;"></i>
+      
+      <span>关于</span>
+    </a>
+    
+  </li>
+  
+  <li>
+    <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+      <i id="searchIcon" class="fas fa-search" title="搜索" style="zoom: 0.85;"></i>
+    </a>
+  </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">wenxy的博客</div>
+        <div class="logo-desc">
+            
+            好记性不如烂笔头
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li class="m-nav-item">
+	  
+		<a href="/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-home"></i>
+			
+			首页
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/tags" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-tags"></i>
+			
+			标签
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/categories" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-bookmark"></i>
+			
+			分类
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/archives" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-archive"></i>
+			
+			归档
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/about" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-user-circle"></i>
+			
+			关于
+		</a>
+          
+        </li>
+        
+        
+    </ul>
+</div>
+
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/2.jpg')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">ffplay源码解析（六）：解码线程</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<main class="container content">
+
+    
+    <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/ffplay/">
+                                <span class="chip bg-color">ffplay</span>
+                            </a>
+                        
+                            <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+                                <span class="chip bg-color">源码解析</span>
+                            </a>
+                        
+                            <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
+                                <span class="chip bg-color">音视频</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
+                                ffplay源码解析
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2022-12-02
+                </div>
+                
+
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
+                    2022-12-02
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
+                    2.7k
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                    11 分
+                </div>
+                
+
+                
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+
+        
+
+        
+        <!-- 代码块折行 -->
+        <style type="text/css">
+            code[class*="language-"], pre[class*="language-"] { white-space: pre-wrap !important; }
+        </style>
+        
+
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <p>ffplay的音频流、视频流和字幕流的解码工作通过三个解码线程完成，解码线程通过decoder_start函数开启，分别调用audio_thread,video_thread,subtitle_thread三个函数，接下来我们逐个分析。</p>
+<p>首先是音频解码函数audio_thread，去除滤镜处理的相关代码，函数代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">audio_thread</span><span class="params">(<span class="type">void</span> *arg)</span></span><br><span class="line">&#123;</span><br><span class="line">  VideoState *is = arg;</span><br><span class="line">  AVFrame *frame = av_frame_alloc();</span><br><span class="line">  Frame *af;</span><br><span class="line">  <span class="type">int</span> got_frame = <span class="number">0</span>;</span><br><span class="line">  AVRational tb;</span><br><span class="line">  <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!frame)</span><br><span class="line">    <span class="keyword">return</span> AVERROR(ENOMEM);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ((got_frame = decoder_decode_frame(&amp;is-&gt;auddec, frame, <span class="literal">NULL</span>)) &lt; <span class="number">0</span>)</span><br><span class="line">      <span class="keyword">goto</span> the_end;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (got_frame) &#123;</span><br><span class="line">      tb = (AVRational)&#123;<span class="number">1</span>, frame-&gt;sample_rate&#125;;</span><br><span class="line">       <span class="keyword">if</span> (!(af = frame_queue_peek_writable(&amp;is-&gt;sampq)))</span><br><span class="line">          <span class="keyword">goto</span> the_end;</span><br><span class="line"></span><br><span class="line">        af-&gt;pts = (frame-&gt;pts == AV_NOPTS_VALUE) ? NAN : frame-&gt;pts * av_q2d(tb);</span><br><span class="line">        af-&gt;pos = frame-&gt;pkt_pos;</span><br><span class="line">        af-&gt;serial = is-&gt;auddec.pkt_serial;</span><br><span class="line">        af-&gt;duration = av_q2d((AVRational)&#123;frame-&gt;nb_samples, frame-&gt;sample_rate&#125;);</span><br><span class="line"></span><br><span class="line">        av_frame_move_ref(af-&gt;frame, frame);</span><br><span class="line">        frame_queue_push(&amp;is-&gt;sampq);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">while</span> (ret &gt;= <span class="number">0</span> || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF);</span><br><span class="line">  the_end:</span><br><span class="line">  av_frame_free(&amp;frame);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码逻辑十分直观，在一个do-while循环中调用decocer_decode_frame()活的解码后的数据，存入一个AVFrame中，然后从FrameQueue中获取一个指向可写位置的指针af，将AVFrame中的数据写入af对应的字段，最后调用frame_queue_push移动FrameQueue的写指针。由于我们屏蔽掉了滤镜相关的函数，所以while的循环条件看起来有点奇怪，不过效果是一样的，在没有配置滤镜功能时就是一个简单的无线循环。</p>
+<p>我们再来看一下视频解码线程video_thread，精简掉滤镜相关的代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">video_thread</span><span class="params">(<span class="type">void</span> *arg)</span></span><br><span class="line">&#123;</span><br><span class="line">  VideoState *is = arg;</span><br><span class="line">  AVFrame *frame = av_frame_alloc();</span><br><span class="line">  <span class="type">double</span> pts;</span><br><span class="line">  <span class="type">double</span> duration;</span><br><span class="line">  <span class="type">int</span> ret;</span><br><span class="line">  AVRational tb = is-&gt;video_st-&gt;time_base;</span><br><span class="line">  AVRational frame_rate = av_guess_frame_rate(is-&gt;ic, is-&gt;video_st, <span class="literal">NULL</span>);</span><br><span class="line">  <span class="keyword">if</span> (!frame)</span><br><span class="line">    <span class="keyword">return</span> AVERROR(ENOMEM);</span><br><span class="line">  <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    ret = get_video_frame(is, frame);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">      <span class="keyword">goto</span> the_end;</span><br><span class="line">    <span class="keyword">if</span> (!ret)</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">      duration = (frame_rate.num &amp;&amp; frame_rate.den ? av_q2d((AVRational)&#123;frame_rate.den, frame_rate.num&#125;) : <span class="number">0</span>);</span><br><span class="line">      pts = (frame-&gt;pts == AV_NOPTS_VALUE) ? NAN : frame-&gt;pts * av_q2d(tb);</span><br><span class="line">      ret = queue_picture(is, frame, pts, duration, frame-&gt;pkt_pos, is-&gt;viddec.pkt_serial);</span><br><span class="line">      av_frame_unref(frame);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">      <span class="keyword">goto</span> the_end;</span><br><span class="line">  &#125;</span><br><span class="line">  the_end:</span><br><span class="line">  av_frame_free(&amp;frame);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>与音频不同，视频解码线程的处理函数将解码视频帧和将视频帧放入队列这两个步骤封装在了get_video_frame和</p>
+<p>queue_picture两个函数中。我们先来看get_video_fream的实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">get_video_frame</span><span class="params">(VideoState *is, AVFrame *frame)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">int</span> got_picture;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ((got_picture = decoder_decode_frame(&amp;is-&gt;viddec, frame, <span class="literal">NULL</span>)) &lt; <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (got_picture) &#123;</span><br><span class="line">    <span class="type">double</span> dpts = NAN;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (frame-&gt;pts != AV_NOPTS_VALUE)</span><br><span class="line">      dpts = av_q2d(is-&gt;video_st-&gt;time_base) * frame-&gt;pts;</span><br><span class="line"></span><br><span class="line">    frame-&gt;sample_aspect_ratio = av_guess_sample_aspect_ratio(is-&gt;ic, is-&gt;video_st, frame);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (framedrop&gt;<span class="number">0</span> || (framedrop &amp;&amp; get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) &#123;</span><br><span class="line">      <span class="keyword">if</span> (frame-&gt;pts != AV_NOPTS_VALUE) &#123;</span><br><span class="line">        <span class="type">double</span> diff = dpts - get_master_clock(is);</span><br><span class="line">        <span class="keyword">if</span> (!isnan(diff) &amp;&amp; <span class="built_in">fabs</span>(diff) &lt; AV_NOSYNC_THRESHOLD &amp;&amp;</span><br><span class="line">            diff - is-&gt;frame_last_filter_delay &lt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">            is-&gt;viddec.pkt_serial == is-&gt;vidclk.serial &amp;&amp;</span><br><span class="line">            is-&gt;videoq.nb_packets) &#123;</span><br><span class="line">          is-&gt;frame_drops_early++;</span><br><span class="line">          av_frame_unref(frame);</span><br><span class="line">          got_picture = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> got_picture;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到获取到解码后的帧数据后，video_thread还额外加入了一个丢帧逻辑。framedrop如果用户不设置，那么默认值就是-1，用户设置后会有0和1两种情况。所以上面的条件的意思是当用户设置可以丢帧或者用户没设置这个参数但是当前的同步逻辑不是音频同步视频，就可以丢帧。ffplay的时间同步逻辑有三个选项：视频同步音频（AV_SYNC_AUDIO_MASTER），音频同步视频（AV_SYNC_VIDEO_MASTER），音视频同步外部时钟（AV_SYNC_EXTERNAL_CLOCK）。那么当程序允许丢帧时，什么时候才可以丢弃当前帧呢？程序首先计算了当前帧的显示时间点和主时钟的时间差diff，如果这个时间差还在可同步范围内，也就是小于AV_NOSYNC_THRESHOLD才进行接下来的判断。接下来判断diff是否小于上一帧的延时，frame_last_filter_delay，上一帧如果经过滤镜处理，会消耗额外的时间，这个时间计算出来被存入frame_last_filter_delay，如果diff小于这个值，说明当延时时间结束后，当前帧的显示时间点就已经过了，此时判断如果包序列号与时钟序列号是否相同，这里是为了保证在内容连续时才可丢帧；最后判断视频流包队列中如果还有包，则表示后续还有可显示的内容，那么当前帧就可以丢弃。所有条件满足后，丢帧数加一，释放当前帧的数据，将got_picture设置为0返回。这里是在解码成功放入FrameQueue之前丢帧的，所以对frame_drops_early增加一个计数，后面我们还会看到显示画面时的丢帧，那种情况是对frame_drops_late增加计数。</p>
+<p>queue_picture函数的作用就是将数据放入FrameQueue，这里就不上代码了，单独抽离成一个函数可能只是因为需要设置的参数比较多，为了代码好看一点吧：）。</p>
+<p>字幕流的解码线程subtitle_thread的实现更加简单，就是在一个无限循环中读取帧，然后将数据放入FrameQueue的合适位置；</p>
+<p>到现在为止，还有有一个关键的函数我们还没有展开分析，就是decoder_decode_frame，这个函数用于从PacketQueue中读取包然后解码。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">decoder_decode_frame</span><span class="params">(Decoder *d, AVFrame *frame, AVSubtitle *sub)</span> &#123;</span><br><span class="line">  <span class="type">int</span> ret = AVERROR(EAGAIN);</span><br><span class="line">  <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="comment">//音视频流解码</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">//从PacketQueue中读包</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">//字幕流解码</span></span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>函数中有一个无限循环，循环中的代码按照任务划分可以分为三部分：1.音视频流解码；2.从PacketQueue中读包；3.字幕流解码。</p>
+<p>音视频流的解码和字幕流的解码没有放在一起，是因为字幕流的解码方式与音视频流不同。我们先看音视频流的解码流程:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//音视频流解码</span></span><br><span class="line">    <span class="keyword">if</span> (d-&gt;<span class="built_in">queue</span>-&gt;serial == d-&gt;pkt_serial) &#123;<span class="comment">//当前包的序列号与解码器中注册的包队列序列号一致时（内容连续）才进行解码</span></span><br><span class="line">      <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (d-&gt;<span class="built_in">queue</span>-&gt;abort_request)</span><br><span class="line">          <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">switch</span> (d-&gt;avctx-&gt;codec_type) &#123;</span><br><span class="line">          <span class="keyword">case</span> AVMEDIA_TYPE_VIDEO:</span><br><span class="line">            ret = avcodec_receive_frame(d-&gt;avctx, frame);</span><br><span class="line">            <span class="keyword">if</span> (ret &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">              <span class="keyword">if</span> (decoder_reorder_pts == <span class="number">-1</span>) &#123;<span class="comment">//解码器对pts重新排序，0表示关，1表示开，-1表示自动</span></span><br><span class="line">                frame-&gt;pts = frame-&gt;best_effort_timestamp;</span><br><span class="line">              &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!decoder_reorder_pts) &#123;</span><br><span class="line">                frame-&gt;pts = frame-&gt;pkt_dts;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">          <span class="keyword">case</span> AVMEDIA_TYPE_AUDIO:</span><br><span class="line">            ret = avcodec_receive_frame(d-&gt;avctx, frame);</span><br><span class="line">            <span class="keyword">if</span> (ret &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">              AVRational tb = (AVRational)&#123;<span class="number">1</span>, frame-&gt;sample_rate&#125;;<span class="comment">//计算音频流的time_base</span></span><br><span class="line">              <span class="keyword">if</span> (frame-&gt;pts != AV_NOPTS_VALUE)</span><br><span class="line">                frame-&gt;pts = av_rescale_q(frame-&gt;pts, d-&gt;avctx-&gt;pkt_timebase, tb);</span><br><span class="line">              <span class="comment">//转换time_base,按照播放时time_base重新计算pts</span></span><br><span class="line">              <span class="keyword">else</span> <span class="keyword">if</span> (d-&gt;next_pts != AV_NOPTS_VALUE)</span><br><span class="line">                frame-&gt;pts = av_rescale_q(d-&gt;next_pts, d-&gt;next_pts_tb, tb);</span><br><span class="line">              <span class="keyword">if</span> (frame-&gt;pts != AV_NOPTS_VALUE) &#123;</span><br><span class="line">                d-&gt;next_pts = frame-&gt;pts + frame-&gt;nb_samples;</span><br><span class="line">                d-&gt;next_pts_tb = tb;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (ret == AVERROR_EOF) &#123;</span><br><span class="line">          d-&gt;finished = d-&gt;pkt_serial;</span><br><span class="line">          avcodec_flush_buffers(d-&gt;avctx);</span><br><span class="line">          <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (ret &gt;= <span class="number">0</span>)</span><br><span class="line">          <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">      &#125; <span class="keyword">while</span> (ret != AVERROR(EAGAIN));</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>ffmpeg的解码库用于音视频解码的函数是avcodec_send_packet()和avcodec_receive_frame(),前者用户向解码器发送一个AVPacket数据用于解码，后者从解码器中读取解码后生成的AVFrame数据。了解了音视频流解码的原理后，我们再结合注释看代码，就很好理解了，音视频流解码成功后都对帧的pts进行了设置。音频流的pts设置比较有意思，转换了一个时基，相当于时间单位，算出一个新的pts。在pts设置成功后，会计算下一帧的pts：next_pts，这个值用于当解析到的frame中不含pts时充当备份，每一帧对应的next_pts都是在解析上一帧的时候计算出来的。</p>
+<p>剩下的代码是用来判断是否在此处退出函数的。第一种情况是已经解析到流末尾了，将当前包序列号赋值给finished然后清空解码器缓存。第二种情况是ret&gt;&#x3D;0，当成功解析一帧数据时，ret值会被设置等于0。</p>
+<p>接下来分析第二部分读取包的代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">do</span> &#123;<span class="comment">//从PacketQueue中读取新的包</span></span><br><span class="line">  <span class="keyword">if</span> (d-&gt;<span class="built_in">queue</span>-&gt;nb_packets == <span class="number">0</span>)</span><br><span class="line">    SDL_CondSignal(d-&gt;empty_queue_cond);<span class="comment">//如果包队列空了，通知等待的读线程可以继续读了</span></span><br><span class="line">  <span class="keyword">if</span> (d-&gt;packet_pending) &#123;<span class="comment">//有未决的包，所以本次循环不用再读新的包了</span></span><br><span class="line">    d-&gt;packet_pending = <span class="number">0</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="type">int</span> old_serial = d-&gt;pkt_serial;</span><br><span class="line">    <span class="keyword">if</span> (packet_queue_get(d-&gt;<span class="built_in">queue</span>, d-&gt;pkt, <span class="number">1</span>, &amp;d-&gt;pkt_serial) &lt; <span class="number">0</span>)<span class="comment">//从队列中读一个包</span></span><br><span class="line">      <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">if</span> (old_serial != d-&gt;pkt_serial) &#123;<span class="comment">//新读到的包跟之前解析的包不是连续的内容？</span></span><br><span class="line">      avcodec_flush_buffers(d-&gt;avctx);<span class="comment">//刷新解码器缓存</span></span><br><span class="line">      d-&gt;finished = <span class="number">0</span>;<span class="comment">//解码还没结束</span></span><br><span class="line">      d-&gt;next_pts = d-&gt;start_pts;<span class="comment">//更新用于备份的next_pts和next_pts_tb</span></span><br><span class="line">      d-&gt;next_pts_tb = d-&gt;start_pts_tb;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (d-&gt;<span class="built_in">queue</span>-&gt;serial == d-&gt;pkt_serial)<span class="comment">//再校验一次内容的连续性</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  av_packet_unref(d-&gt;pkt);<span class="comment">//如果读到的包序列号与解码器关联的队列序列号不一致，丢弃包内容，下个循环继续读</span></span><br><span class="line">&#125; <span class="keyword">while</span> (<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>最后分析字幕流解码代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (d-&gt;avctx-&gt;codec_type == AVMEDIA_TYPE_SUBTITLE) &#123;<span class="comment">//字幕流解码</span></span><br><span class="line">      <span class="type">int</span> got_frame = <span class="number">0</span>;</span><br><span class="line">      ret = avcodec_decode_subtitle2(d-&gt;avctx, sub, &amp;got_frame, d-&gt;pkt);<span class="comment">//解析字幕流AVPacket</span></span><br><span class="line">      <span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        ret = AVERROR(EAGAIN);<span class="comment">//读取失败，下次循环重读</span></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (got_frame &amp;&amp; !d-&gt;pkt-&gt;data) &#123;</span><br><span class="line">          d-&gt;packet_pending = <span class="number">1</span>;<span class="comment">//拿到数据了，data空了，为了防止有未读出的数据，下次循环还用这个空包去刷新解码器，直到got_frame==0</span></span><br><span class="line">        &#125;</span><br><span class="line">        ret = got_frame ? <span class="number">0</span> : (d-&gt;pkt-&gt;data ? AVERROR(EAGAIN) : AVERROR_EOF);<span class="comment">//拿到数据，ret=0，下次循环函数就返回；如果没拿到数据，但是包的data不为空，下次循环不退出，重新读；//如果又没拿到数据，data也空了，说明到达流末尾了</span></span><br><span class="line">      &#125;</span><br><span class="line">      av_packet_unref(d-&gt;pkt);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;<span class="comment">//如果是其他流，就将AVPacket发送给解码器</span></span><br><span class="line">      <span class="keyword">if</span> (avcodec_send_packet(d-&gt;avctx, d-&gt;pkt) == AVERROR(EAGAIN)) &#123;</span><br><span class="line">        av_log(d-&gt;avctx, AV_LOG_ERROR, <span class="string">&quot;Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n&quot;</span>);</span><br><span class="line">        d-&gt;packet_pending = <span class="number">1</span>;<span class="comment">//解码器里的数据还未被读出，下次循环不用再发送新包了</span></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        av_packet_unref(d-&gt;pkt);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>字幕流的解析通过avcodec_decode_subtitle2()函数完成，如果成功解析到数据，数据会被存放到第二个参数sub，第三个参数got_frame会被设置为非零值。某些解码器并不能实时输出所有解码后的数据，此时需要不停发送一个pkt-&gt;data为NULL的包去刷新。</p>
+<p>由于音视频解码器和字幕解码器都可能存在解码器中的数据未读取完暂时不能接受新的AVPacket的情况，所以需要通过packet_pending这个标志位告诉程序下次循环用不用给解码器发送新的AVPacket。</p>
+<p>到此decoder_decode_frame全部分析完毕，解码线程的所有逻辑也分析结束。</p>
+
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="/about" rel="external nofollow noreferrer">wenxy</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="http://example.com/2022/12/02/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%85%AD%EF%BC%89%EF%BC%9A%E8%A7%A3%E7%A0%81%E7%BA%BF%E7%A8%8B/">http://example.com/2022/12/02/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%85%AD%EF%BC%89%EF%BC%9A%E8%A7%A3%E7%A0%81%E7%BA%BF%E7%A8%8B/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="/about" target="_blank">wenxy</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
+      document.addEventListener("copy", function (e) {
+        let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
+        M.toast({html: toastHTML})
+      });
+
+      function navToReprintStatement() {
+        $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
+      }
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/ffplay/">
+                                    <span class="chip bg-color">ffplay</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+                                    <span class="chip bg-color">源码解析</span>
+                                </a>
+                            
+                                <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
+                                    <span class="chip bg-color">音视频</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">你的赏识是我前进的动力</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="/medias/reward/alipay.jpeg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="/medias/reward/wechat.JPG" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
+            <div class="card">
+                <a href="/2022/12/02/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%85%AD%EF%BC%89%EF%BC%9A%E8%A7%A3%E7%A0%81%E7%BA%BF%E7%A8%8B/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/2.jpg" class="responsive-img" alt="ffplay源码解析（六）：解码线程">
+                        
+                        <span class="card-title">ffplay源码解析（六）：解码线程</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            解析ffplay源码中解码线程的实现原理
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-02
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
+                                    ffplay源码解析
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/ffplay/">
+                        <span class="chip bg-color">ffplay</span>
+                    </a>
+                    
+                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+                        <span class="chip bg-color">源码解析</span>
+                    </a>
+                    
+                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
+                        <span class="chip bg-color">音视频</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2022/12/01/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%94%EF%BC%89%EF%BC%9A%E8%AF%BB%E7%BA%BF%E7%A8%8B/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="ffplay源码解析（五）：读线程">
+                        
+                        <span class="card-title">ffplay源码解析（五）：读线程</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            解析ffplay源码中读线程是如何从流中读取数据并放入包队列的
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-01
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
+                                    ffplay源码解析
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/ffplay/">
+                        <span class="chip bg-color">ffplay</span>
+                    </a>
+                    
+                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+                        <span class="chip bg-color">源码解析</span>
+                    </a>
+                    
+                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
+                        <span class="chip bg-color">音视频</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+
+<!-- 代码块复制 -->
+
+
+<!-- 代码块收缩 -->
+
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+    <div class="container row center-align" style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2019-2022</span>
+            
+            <span id="year">2019</span>
+            <a href="/about" target="_blank">wenxy</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+            &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                class="white-color">15k</span>&nbsp;字
+            
+            
+            
+            
+            
+            
+            <span id="busuanzi_container_site_pv">
+                |&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="busuanzi_value_site_pv"
+                    class="white-color"></span>&nbsp;次
+            </span>
+            
+            
+            <span id="busuanzi_container_site_uv">
+                |&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="busuanzi_value_site_uv"
+                    class="white-color"></span>&nbsp;人
+            </span>
+            
+            <br>
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+
+
+    <a href="mailto:919601977@qq.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=919601977" class="tooltipped" target="_blank" data-tooltip="QQ联系我: 919601977" data-position="top" data-delay="50">
+        <i class="fab fa-qq"></i>
+    </a>
+
+
+
+
+
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="/libs/materialize/materialize.min.js"></script>
+    <script src="/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="/libs/aos/aos.js"></script>
+    <script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="/js/matery.js"></script>
+
+    <!-- Baidu Analytics -->
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+    
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+    
+
+	
+    
+
+    
+
+    
+
+    
+    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+</body>
+
+</html>
