@@ -33,6 +33,33 @@
     
     
     <entry>
+      <title>C++多线程学习笔记：使用thread类创建线程</title>
+      <link href="/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/"/>
+      <url>/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/</url>
+      
+        <content type="html"><![CDATA[<p>自C++11开始，标准库增加了多线程的支持，使用标准库创建线程有两种方式：</p><p>1.使用std::thread类创建线程实例</p><p>2.使用std::async函数创建异步任务</p><p>我们先从第一种开始介绍。无论是哪种创建方式，C++支持的可调用类型都可以作为参数传入，例如函数，函数指针，函数对象，lambda表达式，bind创建的对象以及function类型等。我们先准备几个可调用对象：</p><p><code>void print_per_second()&#123;</code><br>  <code>while(1)&#123;</code><br>    <code>cout&lt;&lt;&quot;hello world from thread：&quot;&lt;&lt;std::this_thread::get_id&lt;&lt;endl;</code><br>    <code>this_thread::sleep_for(chrono::seconds(1));</code><br>  <code>&#125;</code><br><code>&#125;</code><br><code>void print_once()&#123;</code><br>    <code>cout&lt;&lt;&quot;hello world from thread： &quot;&lt;&lt;std::this_thread::get_id&lt;&lt;endl;</code><br><code>&#125;;</code><br><code>class Task&#123;</code><br> <code>public:</code><br>  <code>void operator()()&#123;</code><br>    <code>while(1)&#123;</code><br>      <code>cout&lt;&lt;&quot;hello world from thread：&quot;&lt;&lt;std::this_thread::get_id&lt;&lt;endl;</code><br>      <code>this_thread::sleep_for(chrono::seconds(1));</code><br>    <code>&#125;</code><br>  <code>&#125;</code><br><code>&#125;;</code></p><p>两个print函数和一个重载了函数调用运算符的类，函数和重载的函数调用运算符执行的操作也很简单，只是输出一行带有线程id的信息，get_id是命名空间this_thread提供的一个全局函数，作用是返回当前线程的id。</p><p>现在我们创建第一个线程，创建方式也很简单，我们使用print_once的函数名作为阐述传给std::thread的构造函数就能得到一个线程实例，并且实例创建完成后，线程自动开始运行：</p><p><code>int main()&#123;</code><br>  <code>std::thread t1(print_once);</code><br>  <code>return 0;</code><br><code>&#125;</code></p><p>编译运行这段代码，发现并没有按照我们预期运行，反而是被终止了：</p><p><code>libc++abi: terminating</code><br><code>信号: SIGABRT (signal SIGABRT)</code></p><p>产生这种错误的原因是C++标准规定，线程对象在销毁前一定要调用join()或detach()，否则会导致程序被终止（terminated）调用join()会使程序阻塞在调用点直到线程执行结束，相当于等待线程完成；调用detach()则是将线程与主线程分离，分离后的线程会独自运行直到线程调用的函数返回或主程序退出。</p><p>对于一个线程实例只能调用一次join()或detach()，多次调用会导致程序抛出异常。为了判断线程对象是否可以调用join()或detach()，标准库提供了一个joinable()函数返回一个表示线程对象joinable状态的bool值。当joinable()的返回值为true时，才可以对线程对象调用join()或detach();</p><p>我们修改刚才的代码，在主线程中等待t1结束：</p><p><code>int main()&#123;</code><br>  <code>std::thread t1(print_once);</code><br>  <code>t1.join();</code><br>  <code>return 0;</code><br><code>&#125;</code></p><p>这样代码就正常运行了，当然这里也可以调用detach()，只不过这样一来，如果print_once执行的是某种耗时操作，例如等待几秒后再打印信息，那么在程序退出之前，该信息就无法打印出来了。</p><p>还有一点需要注意的是标准规定的是在线程对象销毁之前一定要对其调用join()或detach()，这就可能造成一个比较有意思的现象，看下面的代码：</p><p><code>int main()&#123;</code><br>  <code>std::thread t1(print_once);</code><br>  <code>std::thread t2(print_per_second);</code><br>  <code>t2.join();</code><br>  <code>return 0;</code><br><code>&#125;</code></p><p>上面的代码只对t2调用了join()，但是对t1却没有调用，这段代码编译运行后并没有报错。原因是t2线程执行的函数是一个无限循环的函数，主线程会一直等待在t2.join()这个调用点不退出，所以t1就是始终在作用域，不会被销毁，所以也不会因为没有对其调用join()而导致程序终止。想要验证这一点也很简单，只需要将t2.join()改成t2.detach()即可。t2线程被分离，主线程不等待t2结束直接退出，t1在离开作用域之前没有调用join()或detach()，导致程序异常退出。代码比较简单，就不展示了。</p><p>另外一点需要注意的是使用std::thread默认构造函数创建的对象是unjoinable的，也就是说使用如下代码创建的线程对象不能调用join()或detach()，否则程序会抛出异常。</p><p><code>std::thread t1;</code></p><p>在上面的例子中我们已经使用print_once和print_per_second函数名作为参数传递给std::thread的构造函数创建出了线程对象，使用函数名作为参数会默认传递函数的指针。一开始我们已经说过，std::thread的构造函数可以接受所有可调用对象作为参数，所以作为重载了函数调用运算符的类的实例自然也可以作为参数传递给std::thread以构造线程对象，具体代码如下：</p><p><code>int main()&#123;</code><br>  <code>Task task;</code><br>  <code>std::thread t1(task);</code><br>  <code>t1.join();</code><br>  <code>return 0;</code><br><code>&#125;</code></p><p>当然我们也可以使用匿名对象作为参数，不过这种情况需要注意，使用下面的写法是不行的：</p><p><code>std::thread t1(Task());</code></p><p>这种写法会让编译器认为这是一个函数声明，该函数的参数为一个没有参数且返回Task类型队形的函数指针，函数返回一个std::thread类型的对象。为了让编译器认为这是线程实例的初始化而不是一个函数声明，可以使用下面两种写法中的一种：</p><p><code>std::thread t1((Task()));</code><br><code>std::thread t1&#123;Task()&#125;;</code></p><p>第一种写法是在外面多加一个括号，阻止将改行代码解释为函数声明；第二种写法是利用统一初始化语法完成实例的创建。</p><p>C++11新增了对lambda表达式的支持，编译器在解释lambda表达式时，会将其翻译成一个匿名类的匿名对象，该匿名类中含所有一个重载的函数调用运算符，所以lambda表达式也可以作为参数传递给线程的构造函数：</p><p><code>std::thread t1([]()&#123;cout&lt;&lt;&quot;hello world&quot;&lt;&lt;endl;&#125;);</code></p><p>C++11新增了一个function模板，可以用来存储任何可调用对象，相应的，具体的function类型也是可调用对象，也可以作为线程构造函数的参数：</p><p><code>function&lt;void()&gt; func = print_once;</code><br><code>std::thread t1(func);</code></p><p>函数模板bind也返回一个可调用对象，也可以作为线程构造函数的参数，代码就不写了，有兴趣的可以自行了解。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> C++多线程 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> C++ </tag>
+            
+            <tag> 多线程 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>ffplay源码解析（七）：视频播放</title>
       <link href="/2022/12/04/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%83%EF%BC%89%EF%BC%9A%E8%A7%86%E9%A2%91%E6%92%AD%E6%94%BE/"/>
       <url>/2022/12/04/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%83%EF%BC%89%EF%BC%9A%E8%A7%86%E9%A2%91%E6%92%AD%E6%94%BE/</url>
