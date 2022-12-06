@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="ffplay源码解析">
+    <meta name="keywords" content="C++多线程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>ffplay源码解析（二）：VideoState结构体 | wenxy的博客</title>
+    <title>C++多线程学习笔记：使用std::async()创建异步任务 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/5.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/20.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">ffplay源码解析（二）：VideoState结构体</h1>
+                    <h1 class="description center-align post-title">C++多线程学习笔记：使用std::async()创建异步任务</h1>
                 </div>
             </div>
         </div>
@@ -230,16 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/ffplay/">
-                                <span class="chip bg-color">ffplay</span>
+                            <a href="/tags/C/">
+                                <span class="chip bg-color">C++</span>
                             </a>
                         
-                            <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                                <span class="chip bg-color">源码解析</span>
-                            </a>
-                        
-                            <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                                <span class="chip bg-color">音视频</span>
+                            <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                <span class="chip bg-color">多线程</span>
                             </a>
                         
                     </div>
@@ -250,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                C++多线程
                             </a>
                         
                     </div>
@@ -263,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-11-29
+                    2022-12-06
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-11-30
+                    2022-12-06
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.1k
+                    2k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    4 分
+                    7 分
                 </div>
                 
 
@@ -309,12 +305,38 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>VideoState结构体是ffplay源码里最重要也是最庞大的一个结构体，可以说是“包罗万象”，整个源码读下来给人的感觉就是只要是需要在函数间传递的参数，都会被放进这个结构体，然后相关的函数之间传VideoState的指针就好。这样做的好处是不用费力为每个函数想不同的参数名，后期增删参数时只需要修改VideoState结构体以及使用到该参数的某几行代码而不用修改所有相关函数的调用。坏处就是代码的耦合度太高了，不过对于单个源文件写完所有功能的ffplay来说，这并不算是什么大问题。</p>
-<p>VideoState结构体的注释如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">VideoState</span> &#123;</span><br><span class="line">  SDL_Thread *read_tid;<span class="comment">//读线程id</span></span><br><span class="line">  <span class="type">const</span> AVInputFormat *iformat;<span class="comment">//输入文件格式</span></span><br><span class="line">  <span class="type">int</span> abort_request;<span class="comment">//为1时，读线程退出</span></span><br><span class="line">  <span class="type">int</span> force_refresh;<span class="comment">//强制刷新标志位</span></span><br><span class="line">  <span class="type">int</span> paused;<span class="comment">//播放暂停标志位</span></span><br><span class="line">  <span class="type">int</span> last_paused;<span class="comment">//上一次设置的paused标志位</span></span><br><span class="line">  <span class="type">int</span> queue_attachments_req;<span class="comment">//请求流中的附加信息（如封面图片）的标志位</span></span><br><span class="line">  <span class="type">int</span> seek_req;<span class="comment">//查找请求</span></span><br><span class="line">  <span class="type">int</span> seek_flags;<span class="comment">//指定查找行为的标志位</span></span><br><span class="line">  <span class="type">int64_t</span> seek_pos;<span class="comment">//查找位置</span></span><br><span class="line">  <span class="type">int64_t</span> seek_rel;<span class="comment">//查找粒度</span></span><br><span class="line">  <span class="type">int</span> read_pause_return;<span class="comment">//保存av_read_pause()函数的返回值</span></span><br><span class="line">  AVFormatContext *ic;</span><br><span class="line">  <span class="type">int</span> realtime;<span class="comment">//是否是实时流</span></span><br><span class="line"></span><br><span class="line">  Clock audclk;<span class="comment">//音频流时钟</span></span><br><span class="line">  Clock vidclk;<span class="comment">//视频流时钟</span></span><br><span class="line">  Clock extclk;<span class="comment">//外部时钟</span></span><br><span class="line"></span><br><span class="line">  FrameQueue pictq;<span class="comment">//视频流的帧队列</span></span><br><span class="line">  FrameQueue subpq;<span class="comment">//字幕流的帧队列</span></span><br><span class="line">  FrameQueue sampq;<span class="comment">//音频流的帧队列</span></span><br><span class="line"></span><br><span class="line">  Decoder auddec;<span class="comment">//音频解码器</span></span><br><span class="line">  Decoder viddec;<span class="comment">//视频解码器</span></span><br><span class="line">  Decoder subdec;<span class="comment">//字幕解码器</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> audio_stream;<span class="comment">//音频流序号</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> av_sync_type;<span class="comment">//音视频同步模式</span></span><br><span class="line"></span><br><span class="line">  <span class="type">double</span> audio_clock;<span class="comment">//音频时钟数值</span></span><br><span class="line">  <span class="type">int</span> audio_clock_serial;<span class="comment">//音频时钟序列号</span></span><br><span class="line">  <span class="type">double</span> audio_diff_cum; <span class="comment">/* used for AV difference average computation */</span></span><br><span class="line">  <span class="type">double</span> audio_diff_avg_coef;</span><br><span class="line">  <span class="type">double</span> audio_diff_threshold;</span><br><span class="line">  <span class="type">int</span> audio_diff_avg_count;<span class="comment">//以上几个值用于计算音频重采样的样本数</span></span><br><span class="line">  AVStream *audio_st;<span class="comment">//指向音频流的指针</span></span><br><span class="line">  PacketQueue audioq;<span class="comment">//音频流的包队列</span></span><br><span class="line">  <span class="type">int</span> audio_hw_buf_size;<span class="comment">//硬件支持的音频缓冲区大小</span></span><br><span class="line">  <span class="type">uint8_t</span> *audio_buf;<span class="comment">//指向储存音频数据的缓冲区</span></span><br><span class="line">  <span class="type">uint8_t</span> *audio_buf1;<span class="comment">//指向储存音频数据的缓冲区</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> audio_buf_size; <span class="comment">/* in bytes */</span></span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> audio_buf1_size;<span class="comment">//缓冲区大小</span></span><br><span class="line">  <span class="type">int</span> audio_buf_index; <span class="comment">/* 音频缓冲区读取位置 in bytes */</span></span><br><span class="line">  <span class="type">int</span> audio_write_buf_size;<span class="comment">//音频缓冲区中可写区域的大小</span></span><br><span class="line">  <span class="type">int</span> audio_volume;<span class="comment">//音量值</span></span><br><span class="line">  <span class="type">int</span> muted;<span class="comment">//是否静音</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_src;<span class="comment">//音频参数</span></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_AVFILTER</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_filter_src;<span class="comment">//滤镜处理后的音频参数</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">AudioParams</span> audio_tgt;<span class="comment">//硬件支持的音频参数</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwrContext</span> *swr_ctx;<span class="comment">//音频重采样上下文</span></span><br><span class="line">  <span class="type">int</span> frame_drops_early;<span class="comment">//解码过程中的丢帧数</span></span><br><span class="line">  <span class="type">int</span> frame_drops_late;<span class="comment">//渲染过程中的丢帧数</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">enum</span> <span class="title class_">ShowMode</span> &#123;</span><br><span class="line">    SHOW_MODE_NONE = <span class="number">-1</span>, SHOW_MODE_VIDEO = <span class="number">0</span>, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB</span><br><span class="line">  &#125; show_mode;<span class="comment">//显示模式，分为视频模式，波形图模式以及频谱图</span></span><br><span class="line">  <span class="type">int16_t</span> sample_array[SAMPLE_ARRAY_SIZE];<span class="comment">//音频样本数组</span></span><br><span class="line">  <span class="type">int</span> sample_array_index;<span class="comment">//样本数组的读取位置</span></span><br><span class="line">  <span class="type">int</span> last_i_start;</span><br><span class="line">  RDFTContext *rdft;<span class="comment">//实时傅里叶变换上下文</span></span><br><span class="line">  <span class="type">int</span> rdft_bits;</span><br><span class="line">  FFTSample *rdft_data;</span><br><span class="line">  <span class="type">int</span> xpos;</span><br><span class="line">  <span class="type">double</span> last_vis_time;</span><br><span class="line">  SDL_Texture *vis_texture;<span class="comment">//用于渲染音频图像的纹理结构体指针</span></span><br><span class="line">  SDL_Texture *sub_texture;<span class="comment">//用于渲染字幕的纹理结构体指针</span></span><br><span class="line">  SDL_Texture *vid_texture;<span class="comment">//用于渲染视频的纹理结构体指针</span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> subtitle_stream;<span class="comment">//字幕流序号</span></span><br><span class="line">  AVStream *subtitle_st;<span class="comment">//指向字幕流的指针</span></span><br><span class="line">  PacketQueue subtitleq;<span class="comment">//字幕流的包队列</span></span><br><span class="line"></span><br><span class="line">  <span class="type">double</span> frame_timer;<span class="comment">//帧计时器</span></span><br><span class="line">  <span class="type">double</span> frame_last_returned_time;</span><br><span class="line">  <span class="type">double</span> frame_last_filter_delay;</span><br><span class="line">  <span class="type">int</span> video_stream;<span class="comment">//视频流序号</span></span><br><span class="line">  AVStream *video_st;<span class="comment">//视频流指针</span></span><br><span class="line">  PacketQueue videoq;<span class="comment">//视频流包队列</span></span><br><span class="line">  <span class="type">double</span> max_frame_duration; <span class="comment">//单个帧最大的持续时间   // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity</span></span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwsContext</span> *img_convert_ctx;</span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">SwsContext</span> *sub_convert_ctx;</span><br><span class="line">  <span class="type">int</span> eof;<span class="comment">//文件结束标志位</span></span><br><span class="line"></span><br><span class="line">  <span class="type">char</span> *filename;<span class="comment">//文件名</span></span><br><span class="line">  <span class="type">int</span> width, height, xleft, ytop;<span class="comment">//窗口的位置和大小</span></span><br><span class="line">  <span class="type">int</span> step;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> CONFIG_AVFILTER</span></span><br><span class="line">  <span class="type">int</span> vfilter_idx;</span><br><span class="line">  AVFilterContext *in_video_filter;   <span class="comment">// the first filter in the video chain</span></span><br><span class="line">  AVFilterContext *out_video_filter;  <span class="comment">// the last filter in the video chain</span></span><br><span class="line">  AVFilterContext *in_audio_filter;   <span class="comment">// the first filter in the audio chain</span></span><br><span class="line">  AVFilterContext *out_audio_filter;  <span class="comment">// the last filter in the audio chain</span></span><br><span class="line">  AVFilterGraph *agraph;              <span class="comment">// audio filter graph</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> last_video_stream, last_audio_stream, last_subtitle_stream;<span class="comment">//上一次使用的流，用于循环播放</span></span><br><span class="line"></span><br><span class="line">  SDL_cond *continue_read_thread;<span class="comment">//控制读线程是否继续读的条件变量</span></span><br><span class="line">&#125; VideoState;</span><br></pre></td></tr></table></figure>
-
-<p>结构体中某些参数单从注释上很难理解其具体含义，所以在之后的源码分析中我们会反复回来看这个结构体的内容。</p>
-<p>在分析具体代码逻辑之前，我们需要知道ffplay中用到的两个队列的用法：PacketQueue，FrameQueue。</p>
+                <p>C++标准库提供了一个高层接口用于创建异步任务：std::async()，跟std::thread构造函数一样，该函数同样可以接受任何可调用类型对象作为参数，函数返回一个future<T>类型的对象，future<T>是一个模板类，类型参数T表示任务函数返回值的类型，如果任务函数没有返回值，则T为void。使用std::async()创建异步任务的方法如下：</p>
+<p><code>void print_once()&#123;</code><br>    <code>this_thread::sleep_for(chrono::seconds(1));</code><br>    <code>cout&lt;&lt;&quot;hello world from thread： &quot;&lt;&lt;std::this_thread::get_id()&lt;&lt;endl;</code><br><code>&#125;;</code><br><code>int main()&#123;</code><br>  <code>std::future&lt;void&gt; res = std::async(print_once);</code><br>  <code>res.wait();</code><br>  <code>return 0;</code><br><code>&#125;</code></p>
+<p>使用std::async()创建异步任务与使用std::thread创建线程有一个重要的差异，就是前者并不保证任务函数一定在单独的线程中执行，也就是说std::async()并不保证一定会创建一个新的线程，自然也不能保证创建异步任务后任务函数会立刻开始执行。那如果调用线程需要确保异步任务执行结束或者需要获取异步任务的执行结果呢？答案是使用std::async()返回的future对象调用wait()或get()，wait()函数会阻塞直到异步任务执行完毕，get()函数会阻塞直到异步任务执行完毕并从获取任务函数的返回值。wait()函数和get()函数会强制启动future关联的线程并等待线程执行结束。</p>
+<p>到这里我们已经可以发现使用std::async()的第一个好处了：我们可以获取任务函数的执行结果！当我们使用std::thread创建线程时，线程创建后就独立运行，如果任务函数有返回值，即便线程执行结束，我们也没有办法通过线程对象获取到任务函数的返回值，只能通过传入引用或者修改共享内存等方法来获取线程的执行结果。但是使用std::async()我们只需要对其返回的future执行get()就可以轻松获取线程的执行结果！future还有一个强大的功能，传递异常！当我们使用std::thread创建线程时，如果线程中的函数抛出异常，会发生什么呢？我们来模拟一下这种情况，先写个简单的测试函数，抛出一个异常：</p>
+<p><code>int func()&#123;</code><br>  <code>throw logic_error(&quot;error&quot;);</code><br><code>&#125;</code></p>
+<p>我们像往常一样使用try-catch块将调用函数的地方包起来，看看会发生什么：</p>
+<p><code>try&#123;</code><br>  <code>std::thread t(func);</code><br>  <code>t.join();</code><br><code>&#125;catch (exception &amp;e)&#123;</code><br>  <code>cout&lt;&lt;e.what()&lt;&lt;endl;</code><br><code>&#125;</code></p>
+<p>代码执行后报错：libc++abi: terminating with uncaught exception of type std::logic_error: error。</p>
+<p>怎么会这样呢？这是因为如果将异常从任务函数向上传递给std::thread的构造函数，异常并不会被传递给创建线程的主线程，所以在主线程中当然不会捕获到任何异常，所以未处理的异常会导致std::terminate()被调用，整个程序就会被终止。因为一个线程的异常导致整个程序被异常终止通常不是我们想要的结果，理想的结果是只有发生异常的线程被终止，其他线程不受影响。要想达成这样的目的，我们可以在任务函数中将所有异常处理掉，不让异常向上传递，但是实际开发时，你不能保证所有的任务函数都出自同一个程序员之手，甚至不能保证所有函数你都能看到源码，所以也不能保证这些任务函数都会有自己的异常处理代码；第二种方法是在创建线程时使用try-catch块包裹住任务函数：</p>
+<p><code>std::thread t([]&#123;try&#123;func();&#125;catch(exception &amp;e)&#123;cout&lt;&lt;e.what()&lt;&lt;endl ;&#125;&#125;);</code></p>
+<p>这种方式明显比第一种方式优雅许多。那么使用std::async()创建的异步任务怎么处理异常呢？答案是使用try-catch将get()调用包裹起来,甚至如果你不想处理异常，你都可以不写任何异常处理代码，也不会导致程序异常终止！当然这种做法是不提倡的。</p>
+<p><code>auto res = std::async(func);</code><br><code>try&#123;</code><br>  <code>res.get();</code><br><code>&#125;catch (exception &amp;e)&#123;</code><br>  <code>cout&lt;&lt;e.what()&lt;&lt;endl;</code><br><code>&#125;</code></p>
+<p>我们用auto来修饰std::async()的返回值，这是一种常用的简化代码的方式，我们不必去记住每个任务函数的返回类型。异步任务中的异常信息会被保存在一个shared state对象当中，该对象是引用计数的。当对返回值future调用get()时，保存在shared state中的异常会被重新抛出，我们就可以在try-catch块中捕捉异常了。</p>
+<p>在文章的开头我们说过，使用std::async()创建的异步任务可能并不会创建一个新的线程单独运行，也不保证在函数调用后异步任务立刻就开始执行，只是保证在对future调用的wait()或get()函数返回时，异步任务已经执行完毕。这种行为就像是我们为我们将来可能使用的某个结果安排了一个异步任务，标准库保证我们在需要这个结果的时候异步任务会执行完并将结果返回给我们，如果我们以后不需要这个结果了，那么我们提前安排的异步任务可能根本就不会执行。那么我们能手动控制这种行为吗？答案是肯定的。std::async()函数的第一个参数用于指定发射（Launch）策略，当没有手动指定的时候（就像之前我们的用法），会启用默认策略。标准库提供的策略有三种：</p>
+<ol>
+<li><p>std::launch::deferred：任务函数会在当前线程中执行并会延迟执行直到wait()或get()被调用；</p>
+</li>
+<li><p>std::launch::async：任务函数会在独立线程中立即执行；</p>
+</li>
+<li><p>std::launch::deferred|std::launch::async：选择哪种执行方式交给具体实现。</p>
+</li>
+</ol>
+<p>默认的策略是第三种，所以如果我们期望异步任务一定要在单独线程中执行时，应该明确指定Launch策略为std::launch::async：</p>
+<p><code>auto res = std::async(std::launch::async,func);</code></p>
+<p>当我们指定策略为std::launch::async时，即便我们未来没有对res调用wait()或get(),在res离开作用域被销毁之前，主线程也会等待直到异步任务执行结束。相反如果我们指定策略为std::launch::deffered，在我们调用wait()和get()之前，任务函数根本就不会被执行。</p>
+<p>使用默认策略会将选择权交给标准库，标准库会根据全局的线程使用情况来选择使用哪种策略。这就带来一个问题，就是当你使用默认策略的时候，你并不知道任务函数会在当前线程还是新线程中执行，如果函数涉及到一些thread_local类型数据的修改，就会导致你不知道究竟是哪个线程的数据被修改了。另外假如你想要等待某个异步任务执行成功，写了如下代码：</p>
+<p><code>auto res = std::async(func);</code></p>
+<p><code>while(res.wait_for(1000ms)!=std::future_status::ready)&#123;</code></p>
+<p><code>...</code></p>
+<p><code>&#125;</code></p>
+<p>你可能会被永远困在循环中！因为如果自动选定的策略是deferred，那么wait_for()函数的返回结果永远都会是std::future_status::defferred。wait_for()函数会等待一段时间并返回future的状态，当任务函数执行完毕后，future会被设置为ready，该状态被保存在future关联的shared state对象当中，类似的函数还有wait_until(),与wait()函数不同，wait_for()和wait_until()只会返回future的状态，并不会强制启动异步任务。</p>
+<p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》、《C++标准库第二版》、《Primer C++ 第五版》</p>
 
                 
             </div>
@@ -341,7 +363,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/">http://example.com/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/</a>
+                    <a href="http://example.com/2022/12/06/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8async()%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/">http://example.com/2022/12/06/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8async()%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -379,16 +401,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/ffplay/">
-                                    <span class="chip bg-color">ffplay</span>
+                                <a href="/tags/C/">
+                                    <span class="chip bg-color">C++</span>
                                 </a>
                             
-                                <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                                    <span class="chip bg-color">源码解析</span>
-                                </a>
-                            
-                                <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                                    <span class="chip bg-color">音视频</span>
+                                <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                    <span class="chip bg-color">多线程</span>
                                 </a>
                             
                         </div>
@@ -558,54 +576,52 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">
+                <a href="/2022/12/06/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8async()%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="ffplay源码解析（三）：PacketQueue">
+                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：使用std::async()创建异步任务">
                         
-                        <span class="card-title">ffplay源码解析（三）：PacketQueue</span>
+                        <span class="card-title">C++多线程学习笔记：使用std::async()创建异步任务</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中PacketQueue原理
+                            介绍C++标准库使用std::async()函数创建异步任务的方法
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-29
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                    ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
                                 </a>
                             
                             
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/ffplay/">
-                        <span class="chip bg-color">ffplay</span>
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
                     </a>
                     
-                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                        <span class="chip bg-color">源码解析</span>
-                    </a>
-                    
-                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                        <span class="chip bg-color">音视频</span>
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
                     </a>
                     
                 </div>
@@ -619,24 +635,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/11/27/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9Amain%E5%87%BD%E6%95%B0/">
+                <a href="/2022/12/05/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%85%AB%EF%BC%89%EF%BC%9A%E9%9F%B3%E8%A7%86%E9%A2%91%E5%90%8C%E6%AD%A5/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="ffplay源码解析（一）：main函数">
+                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="ffplay源码解析（八）：音视频同步">
                         
-                        <span class="card-title">ffplay源码解析（一）：main函数</span>
+                        <span class="card-title">ffplay源码解析（八）：音视频同步</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中main函数的结构和功能
+                            解析ffplay源码音视频同步原理
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-27
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-05
                             </span>
                         <span class="publish-author">
                             
