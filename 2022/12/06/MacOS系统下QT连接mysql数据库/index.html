@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="C++多线程">
+    <meta name="keywords" content="Qt mysql">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>C++多线程学习笔记：使用std::thread类创建线程 | wenxy的博客</title>
+    <title>MacOS系统下QT连接mysql数据库 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/3.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/1.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">C++多线程学习笔记：使用std::thread类创建线程</h1>
+                    <h1 class="description center-align post-title">MacOS系统下QT连接mysql数据库</h1>
                 </div>
             </div>
         </div>
@@ -230,12 +230,8 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/C/">
-                                <span class="chip bg-color">C++</span>
-                            </a>
-                        
-                            <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                                <span class="chip bg-color">多线程</span>
+                            <a href="/tags/Qt/">
+                                <span class="chip bg-color">Qt</span>
                             </a>
                         
                     </div>
@@ -246,8 +242,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
-                                C++多线程
+                            <a href="/categories/Qt/" class="post-category">
+                                Qt
                             </a>
                         
                     </div>
@@ -259,7 +255,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-05
+                    2022-12-06
                 </div>
                 
 
@@ -273,7 +269,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.6k
+                    1.3k
                 </div>
                 
 
@@ -305,50 +301,75 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>自C++11开始，标准库增加了多线程的支持，使用标准库创建线程有两种方式：</p>
-<p>1.使用std::thread类创建线程实例</p>
-<p>2.使用std::async函数创建异步任务</p>
-<p>我们先从第一种开始介绍。无论是哪种创建方式，C++支持的可调用类型都可以作为参数传入，例如函数，函数指针，函数对象，lambda表达式，bind创建的对象以及function类型等。我们先准备几个可调用对象：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">print_per_second</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">    cout&lt;&lt;<span class="string">&quot;hello world from thread：&quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">    this_thread::<span class="built_in">sleep_for</span>(chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">print_once</span><span class="params">()</span></span>&#123;</span><br><span class="line">    cout&lt;&lt;<span class="string">&quot;hello world from thread： &quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Task</span>&#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">      cout&lt;&lt;<span class="string">&quot;hello world from thread：&quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">      this_thread::<span class="built_in">sleep_for</span>(chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>两个print函数和一个重载了函数调用运算符的类，函数和重载的函数调用运算符执行的操作也很简单，只是输出一行带有线程id的信息，get_id是命名空间this_thread提供的一个全局函数，作用是返回当前线程的id。</p>
-<p>现在我们创建第一个线程，创建方式也很简单，我们使用print_once的函数名作为阐述传给std::thread的构造函数就能得到一个线程实例，并且实例创建完成后，线程自动开始运行：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>编译运行这段代码，发现并没有按照我们预期运行，反而是被终止了：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">libc++abi: terminating</span><br><span class="line">信号: SIGABRT (signal SIGABRT)</span><br></pre></td></tr></table></figure>
-
-<p>产生这种错误的原因是C++标准规定，线程对象在销毁前一定要调用join()或detach()，否则会导致程序被终止（terminated）调用join()会使程序阻塞在调用点直到线程执行结束，相当于等待线程完成；调用detach()则是将线程与主线程分离，分离后的线程会独自运行直到线程调用的函数返回或主程序退出。</p>
-<p>对于一个线程实例只能调用一次join()或detach()，多次调用会导致程序抛出异常。为了判断线程对象是否可以调用join()或detach()，标准库提供了一个joinable()函数返回一个表示线程对象joinable状态的bool值。当joinable()的返回值为true时，才可以对线程对象调用join()或detach();</p>
-<p>我们修改刚才的代码，在主线程中等待t1结束：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  t1.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这样代码就正常运行了，当然这里也可以调用detach()，只不过这样一来，如果print_once执行的是某种耗时操作，例如等待几秒后再打印信息，那么在程序退出之前，该信息就无法打印出来了。</p>
-<p>还有一点需要注意的是标准规定的是在线程对象销毁之前一定要对其调用join()或detach()，这就可能造成一个比较有意思的现象，看下面的代码：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  <span class="function">std::thread <span class="title">t2</span><span class="params">(print_per_second)</span></span>;</span><br><span class="line">  t2.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面的代码只对t2调用了join()，但是对t1却没有调用，这段代码编译运行后并没有报错。原因是t2线程执行的函数是一个无限循环的函数，主线程会一直等待在t2.join()这个调用点不退出，所以t1就是始终在作用域，不会被销毁，所以也不会因为没有对其调用join()而导致程序终止。想要验证这一点也很简单，只需要将t2.join()改成t2.detach()即可。t2线程被分离，主线程不等待t2结束直接退出，t1在离开作用域之前没有调用join()或detach()，导致程序异常退出。代码比较简单，就不展示了。</p>
-<p>另外一点需要注意的是使用std::thread默认构造函数创建的对象是unjoinable的，也就是说使用如下代码创建的线程对象不能调用join()或detach()，否则程序会抛出异常。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std::thread t1;</span><br></pre></td></tr></table></figure>
-
-<p>在上面的例子中我们已经使用print_once和print_per_second函数名作为参数传递给std::thread的构造函数创建出了线程对象，使用函数名作为参数会默认传递函数的指针。一开始我们已经说过，std::thread的构造函数可以接受所有可调用对象作为参数，所以作为重载了函数调用运算符的类的实例自然也可以作为参数传递给std::thread以构造线程对象，具体代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  Task task;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(task)</span></span>;</span><br><span class="line">  t1.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当然我们也可以使用匿名对象作为参数，不过这种情况需要注意，使用下面的写法是不行的：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">(Task())</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>这种写法会让编译器认为这是一个函数声明，该函数的参数为一个没有参数且返回Task类型队形的函数指针，函数返回一个std::thread类型的对象。为了让编译器认为这是线程实例的初始化而不是一个函数声明，可以使用下面两种写法中的一种：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">((Task()))</span></span>;</span><br><span class="line">std::thread t1&#123;<span class="built_in">Task</span>()&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>第一种写法是在外面多加一个括号，阻止将改行代码解释为函数声明；第二种写法是利用统一初始化语法完成实例的创建。</p>
-<p>C++11新增了对lambda表达式的支持，编译器在解释lambda表达式时，会将其翻译成一个匿名类的匿名对象，该匿名类中含所有一个重载的函数调用运算符，所以lambda表达式也可以作为参数传递给线程的构造函数：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">([]()&#123;cout&lt;&lt;<span class="string">&quot;hello world&quot;</span>&lt;&lt;endl;&#125;)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>C++11新增了一个function模板，可以用来存储任何可调用对象，相应的，具体的function类型也是可调用对象，也可以作为线程构造函数的参数：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">function&lt;<span class="type">void</span>()&gt; func = print_once;</span><br><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">(func)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>函数模板bind也返回一个可调用对象，也可以作为线程构造函数的参数，代码就不写了，有兴趣的可以自行了解。</p>
-<p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》、《C++标准库第二版》、《Primer C++ 第五版》</p>
+                <p>MACOS版本：12.3.1</p>
+<p>Qt版本：5.15.2</p>
+<p>1.安装mysql数据库，我的电脑上的安装目录为&#x2F;usr&#x2F;local&#x2F;mysql</p>
+<p>2.准备一个测试程序打印一下当前qt加载的数据库驱动：</p>
+<p>main.cpp</p>
+<p><code>#include &lt;QApplication&gt;</code><br><code>#include &lt;QSqlDatabase&gt;</code><br><code>#include &lt;QDebug&gt;</code><br><code>int main(int argc,char* argv[]) &#123;</code><br>  <code>QApplication app(argc,argv);</code><br>  <code>QStringList drivers = QSqlDatabase::drivers();</code><br>  <code>foreach(QString driver,drivers)</code> 	<br>  <code>qDebug()&lt;&lt;driver;</code><br>  <code>return app.exec();</code><br><code>&#125;</code></p>
+<p>接下来编写CMakeLists.txt</p>
+<p>qt连接数据库需要编译时引入sql组件</p>
+<p><code>cmake_minimum_required(VERSION 3.0)</code><br><code>project(qt_sql_test) s</code><br><code>et(CMAKE_CXX_STANDARD 11)</code><br><code>set(CMAKE_AUTOMOC ON)</code><br><code>set(CMAKE_AUTOUIC ON)</code><br><code>set(CMAKE_AUTORCC ON)</code><br><code>set(CMAKE_PREFIX_PATH /Users/wenxinyuan/Qt/5.15.2/clang_64)</code><br><code>find_package(Qt5 COMPONENTS Core Widgets Sql REQUIRED)</code><br><code>link_libraries(</code><br><code>Qt5::Core</code><br><code>Qt5::Widgets</code><br><code>Qt5::Sql</code><br><code>)</code><br><code>aux_source_directory(./srcs)</code><br><code>add_executable(qt_sql_test $&#123;srcs&#125;)</code></p>
+<p>需要注意的是第9行，如果没有这一行，那么使用cmake构建的时候就会得到类似下面这样的提示：</p>
+<blockquote>
+<p>CMake Error at CMakeLists.txt:10 (find_package):<br>  By not providing “FindQt5.cmake” in CMAKE_MODULE_PATH this project has<br>  asked CMake to find a package configuration file provided by “Qt5”, but<br>  CMake did not find one.</p>
+<p>  Could not find a package configuration file provided by “Qt5” with any of<br>  the following names:</p>
+<p>Qt5Config.cmake<br>qt5-config.cmake</p>
+<p>  Add the installation prefix of “Qt5” to CMAKE_PREFIX_PATH or set “Qt5_DIR”<br>  to a directory containing one of the above files.  If “Qt5” provides a<br>  separate development package or SDK, be sure it has been installed.</p>
+</blockquote>
+<p>所以我们按照提示设置下qt的安装目录，这个安装目录就是bin文件夹所在的目录</p>
+<p>输出的结果如下：</p>
+<p>“QSQLITE”</p>
+<p>“QODBC”</p>
+<p>“QODBC3”</p>
+<p>“QPSQL”</p>
+<p>“QPSQL7”</p>
+<p>以上结果说明当前的qt中没有mysql的驱动，这就需要我们自行编译安装mysql的驱动。</p>
+<p>qt官网中5.15版本的文档提供了编译mysql驱动以及安装插件的方法，链接如下:</p>
+<p><a target="_blank" rel="noopener" href="https://doc.qt.io/qt-5/sql-driver.html#driverwithqt">https://doc.qt.io/qt-5/sql-driver.html#driverwithqt</a></p>
+<p>但是按照官网的方法在我的电脑上没有成功，我也找不到原因，所以我使用另一种方案</p>
+<p>首先进入mysql驱动的源码目录,在我的电脑上，这个目录是</p>
+<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;QT&#x2F;5.15.2&#x2F;Src&#x2F;qtbase&#x2F;src&#x2F;plugins&#x2F;sqldrivers&#x2F;mysql</p>
+<p>这个目录中有一个名称为mysql.pro的文件，打开文件做一下修改：</p>
+<p><code>TARGET = qsqlmysql</code></p>
+<p><code>HEADERS += $$PWD/qsql_mysql_p.h</code><br><code>SOURCES += $$PWD/qsql_mysql.cpp $$PWD/main.cpp</code></p>
+<p><code>#QMAKE_USE += mysql //将原本的这一行注释掉</code><br><code>INCLUDEPATH+=/usr/local/mysql/include //添加mysql的include目录</code><br><code>LIBS+= -L /usr/local/mysql/lib -lmysqlclient //添加mysql的lib目录</code></p>
+<p><code>OTHER_FILES += mysql.json</code></p>
+<p><code>PLUGIN_CLASS_NAME = QMYSQLDriverPlugin</code><br><code>include(../qsqldriverbase.pri)</code></p>
+<p>修改保存后就可以执行qmake进行构建：</p>
+<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;bin&#x2F;qmake  mysql.pro</p>
+<p>由于我没有设置环境变量，所以使用了qmake的完整路径。</p>
+<p>构建过程中没有输出，最后会生成一个新的Makefile文件。直接执行，make进行编译</p>
+<p>编译生成的文件放在下面的目录,注意跟源码目录的差别。</p>
+<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;Src&#x2F;qtbase&#x2F;plugins&#x2F;sqldrivers</p>
+<p>我们直接执行make install进行安装</p>
+<p>编译好的库文件会被安装到目录</p>
+<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers</p>
+<p>中。至此我们已经完成的mysql驱动的编译以及安装。使用文章开头的程序重新检测输出如下：</p>
+<p>“QSQLITE”</p>
+<p>“QMARIADB”</p>
+<p>“QMYSQL”</p>
+<p>“QMYSQL3”</p>
+<p>“QODBC”</p>
+<p>“QODBC3”</p>
+<p>“QPSQL”</p>
+<p>“QPSQL7”</p>
+<p>说明qt已经可以检测到mysql的驱动了。</p>
+<p>接下来我们连接一下本地的数据库进行测试，连接数据库代码如下：</p>
+<p><code>#include &lt;QApplication&gt;</code><br><code>#include &lt;QSqlDatabase&gt;</code><br><code>#include &lt;QDebug&gt;</code></p>
+<p><code>int main(int argc,char* argv[])</code><br><code>&#123;</code><br>    <code>QApplication app(argc,argv);</code><br>    <code>QSqlDatabase db = QSqlDatabase::addDatabase(&quot;QMYSQL&quot;);</code><br>    <code>db.setHostName(&quot;localhost&quot;);</code><br>    <code>db.setDatabaseName(&quot;test1&quot;);</code><br>    <code>db.setUserName(&quot;xinyuan&quot;);</code><br>    <code>db.setPassword(&quot;123456&quot;);</code><br>    <code>bool ret = db.open();</code><br>    <code>qDebug()&lt;&lt;ret;</code><br>    <code>return app.exec();</code><br><code>&#125;</code></p>
+<p>编译后运行输出结果如下：</p>
+<p>QSqlDatabase: QMYSQL driver not loaded QSqlDatabase: available drivers: QSQLITE QMARIADB QMYSQL QMYSQL3 QODBC QODBC3 QPSQL QPSQL7 false</p>
+<p>可以看到虽然qt已经识别到mysql的驱动，但是连接还是失败了。</p>
+<p>为了排查原因，我们设置下环境变量<strong>QT_DEBUG_PLUGINS</strong>&#x3D;1,并重新运行看一下debug信息：</p>
+<p>export QT_DEBUG_PLUGINS&#x3D;1</p>
+<p>运行后输出的信息很多，我们提取最后的有用信息：</p>
+<p>Reason: tried: ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers&#x2F;..&#x2F;..&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers&#x2F;..&#x2F;..&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;lib&#x2F;QtCore.framework&#x2F;Versions&#x2F;5&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;usr&#x2F;local&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;usr&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file))</p>
+<p>可以看到无法加载驱动的原因是相关的mysql的库找不到，那解决方案就很简单了，只需要在CMakeLists.txt文件中添加下相关的库目录就行了，在我的环境下，添加如下命令即可：</p>
+<p>link_directories(     </p>
+<p>&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;lib</p>
+<p>​          )</p>
+<p>重新编译运行后，db.open()返回值为true，成功连接上数据库；</p>
 
                 
             </div>
@@ -375,7 +396,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/">http://example.com/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/</a>
+                    <a href="http://example.com/2022/12/06/MacOS%E7%B3%BB%E7%BB%9F%E4%B8%8BQT%E8%BF%9E%E6%8E%A5mysql%E6%95%B0%E6%8D%AE%E5%BA%93/">http://example.com/2022/12/06/MacOS%E7%B3%BB%E7%BB%9F%E4%B8%8BQT%E8%BF%9E%E6%8E%A5mysql%E6%95%B0%E6%8D%AE%E5%BA%93/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -413,12 +434,8 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/C/">
-                                    <span class="chip bg-color">C++</span>
-                                </a>
-                            
-                                <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                                    <span class="chip bg-color">多线程</span>
+                                <a href="/tags/Qt/">
+                                    <span class="chip bg-color">Qt</span>
                                 </a>
                             
                         </div>
@@ -592,25 +609,74 @@
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9Aasync()%E4%B8%8Ethread%E5%AF%B9%E6%AF%94/">
+                <a href="/2022/12/06/%E5%85%83%E5%AF%B9%E8%B1%A1%E7%B3%BB%E7%BB%9F/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="C++多线程学习笔记：async()与thread对比">
+                        <img src="/medias/featureimages/17.jpg" class="responsive-img" alt="元对象系统">
                         
-                        <span class="card-title">C++多线程学习笔记：async()与thread对比</span>
+                        <span class="card-title">元对象系统</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            对比std::thread和std::async()创建线程的优缺点
+                            简要介绍Qt的元对象系统的用途
                         
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-05
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
                         </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Qt/" class="post-category">
+                                    Qt
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/Qt/">
+                        <span class="chip bg-color">Qt</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2022/12/06/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8async()%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：使用std::async()创建异步任务">
+                        
+                        <span class="card-title">C++多线程学习笔记：使用std::async()创建异步任务</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            介绍C++标准库使用std::async()函数创建异步任务的方法
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -632,63 +698,6 @@
                     
                     <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
                         <span class="chip bg-color">多线程</span>
-                    </a>
-                    
-                </div>
-                
-            </div>
-        </div>
-        
-        
-        <div class="article col s12 m6" data-aos="fade-up">
-            <div class="article-badge right-badge text-color">
-                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
-            </div>
-            <div class="card">
-                <a href="/2022/12/04/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%83%EF%BC%89%EF%BC%9A%E8%A7%86%E9%A2%91%E6%92%AD%E6%94%BE/">
-                    <div class="card-image">
-                        
-                        
-                        <img src="/medias/featureimages/18.jpg" class="responsive-img" alt="ffplay源码解析（七）：视频播放">
-                        
-                        <span class="card-title">ffplay源码解析（七）：视频播放</span>
-                    </div>
-                </a>
-                <div class="card-content article-content">
-                    <div class="summary block-with-text">
-                        
-                            解析ffplay源码视频播放原理
-                        
-                    </div>
-                    <div class="publish-info">
-                            <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-04
-                            </span>
-                        <span class="publish-author">
-                            
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                    ffplay源码解析
-                                </a>
-                            
-                            
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="card-action article-tags">
-                    
-                    <a href="/tags/ffplay/">
-                        <span class="chip bg-color">ffplay</span>
-                    </a>
-                    
-                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                        <span class="chip bg-color">源码解析</span>
-                    </a>
-                    
-                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                        <span class="chip bg-color">音视频</span>
                     </a>
                     
                 </div>
