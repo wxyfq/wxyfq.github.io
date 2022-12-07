@@ -326,6 +326,7 @@
 <p>如果想使用auto，可以通过调用future的share()函数获取shared future:</p>
 <p><code>auto sf = std::async(print_once).share();</code></p>
 <p>future的析构函数中并没有执行join或者detach等特殊操作，仅仅是析构其自身的成员变量，另外还会对shared state中的引用计数进行了一次自减。如果future是最后一个关联通过std::async创建的non-deferred任务的future实例，那么future会阻塞直到任务函数返回才销毁。比如我们通过std::async()函数指定std::launch::async策略创建了一个异步任务获得了一个shared future，shared future可能有很多副本，当某一个副本离开作用域时，如果还存在其他副本，那么这个副本就会紧紧析构自身，然后将shared state的引用计数减1，如果这个副本已经是关联这个shared state的最后一个future了，那么会等待异步任务结束再执行future的析构函数。</p>
+<p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》、《C++标准库第二版》、《Primer C++ 第五版》</p>
 
                 
             </div>
@@ -565,30 +566,29 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="far fa-dot-circle"></i>&nbsp;本篇
-            </div>
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9Afuture/">
+                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：future">
+                        <img src="/medias/featureimages/7.jpg" class="responsive-img" alt="C++多线程学习笔记：线程间数据共享">
                         
-                        <span class="card-title">C++多线程学习笔记：future</span>
+                        <span class="card-title">C++多线程学习笔记：线程间数据共享</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍与future相关的packed_task、promise、shared future的用法
+                            介绍在多线程场景使用互斥量保护共享数据的方法
                         
                     </div>
                     <div class="publish-info">
-                            <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
-                            </span>
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
+                        </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -601,7 +601,6 @@
                         </span>
                     </div>
                 </div>
-
                 
                 <div class="card-action article-tags">
                     
@@ -708,7 +707,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">31k</span>&nbsp;字
+                class="white-color">34.1k</span>&nbsp;字
             
             
             

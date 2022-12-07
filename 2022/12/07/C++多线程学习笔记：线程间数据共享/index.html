@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="ffplay源码解析">
+    <meta name="keywords" content="C++多线程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>ffplay源码解析（三）：PacketQueue | wenxy的博客</title>
+    <title>C++多线程学习笔记：线程间数据共享 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/19.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/7.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">ffplay源码解析（三）：PacketQueue</h1>
+                    <h1 class="description center-align post-title">C++多线程学习笔记：线程间数据共享</h1>
                 </div>
             </div>
         </div>
@@ -230,16 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/ffplay/">
-                                <span class="chip bg-color">ffplay</span>
+                            <a href="/tags/C/">
+                                <span class="chip bg-color">C++</span>
                             </a>
                         
-                            <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                                <span class="chip bg-color">源码解析</span>
-                            </a>
-                        
-                            <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                                <span class="chip bg-color">音视频</span>
+                            <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                <span class="chip bg-color">多线程</span>
                             </a>
                         
                     </div>
@@ -250,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                C++多线程
                             </a>
                         
                     </div>
@@ -263,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-11-29
+                    2022-12-07
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-11-30
+                    2022-12-07
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.2k
+                    3k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    4 分
+                    11 分
                 </div>
                 
 
@@ -309,23 +305,55 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>ffmpeg库解析音视频数据的顺序是先解封装（demuxing）再解码（decoding），其中解封装是从原始数据中分离出不同的数据流，如音频流，视频流等。解码是将从音视频流中读取的压缩数据解析成音视频输出设备可以识别的数据格式，音频如PCM，视频如YUV420P等。ffmpeg相关库的实现中，负责保存压缩数据的数据结构为struct AVPacket，负责保存解码后数据的数据结构为struct AVFrame。ffplay为存放这两种类型的数据创建了两个队列，存放AVPacket的队列就是本章介绍的PacketQueue，存放AVFrame的队列是我们下一章要介绍的FrameQueue；</p>
-<p>先来看一下PacketQueue相关的结构体：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">MyAVPacketList</span> &#123;</span></span><br><span class="line">  AVPacket *pkt;<span class="comment">//压缩的包数据</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//包序列号，跟所在的包序列的序列号一致</span></span><br><span class="line">&#125; MyAVPacketList;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">PacketQueue</span> &#123;</span></span><br><span class="line">  AVFifoBuffer *pkt_list;<span class="comment">//先进先出队列</span></span><br><span class="line">  <span class="type">int</span> nb_packets;<span class="comment">//队列中包的数量</span></span><br><span class="line">  <span class="type">int</span> size;<span class="comment">//队列大小</span></span><br><span class="line">  <span class="type">int64_t</span> duration;<span class="comment">//队列中数据的播放持续时间</span></span><br><span class="line">  <span class="type">int</span> abort_request;<span class="comment">//结束请求</span></span><br><span class="line">  <span class="type">int</span> serial;<span class="comment">//序列号，用于标识一段连续数据</span></span><br><span class="line">  SDL_mutex *mutex;<span class="comment">//线程互斥量</span></span><br><span class="line">  SDL_cond *cond;<span class="comment">//线程条件变量</span></span><br><span class="line">&#125; PacketQueue;</span><br></pre></td></tr></table></figure>
-
-<p>PacketQueue结构体中各个参数的含义已经在注释中写明，PacketQueue的操作函数有以下几个：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_private</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put</span><span class="params">(PacketQueue *q, AVPacket *pkt)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_put_nullpacket</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> stream_index)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_init</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_flush</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_destroy</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_abort</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">packet_queue_start</span><span class="params">(PacketQueue *q)</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">packet_queue_get</span><span class="params">(PacketQueue *q, AVPacket *pkt, <span class="type">int</span> block, <span class="type">int</span> *serial)</span>;</span><br></pre></td></tr></table></figure>
-
-<p>packet_queue_init用memset函数将结构体所在内存以0初始化，这样可以将结构体中int类型的值初始化为0。然后创建一个fifo队列和用于线程同步的互斥量以及条件变量，最后将abort_request设置为1表示队列当前状态不可用；</p>
-<p>packet_queue_flush函数将队列中数据清空，serial值加1，这些操作都在上锁状态下执行，相同的serial值表明这些数据是一段连续的内容，flush操作清空并丢弃了队列中还未被读取的数据，所以通过serial加1来表示接下来的数据跟之前的数据表示的已经不是连续的内容了；</p>
-<p>packet_queue_destory调用flush函数清空数据，然后销毁fifo队列，以及互斥量和条件变量；</p>
-<p>packet_queue_abort在上锁状态下将abort_request设置为1，并调用SDL_ConSignal()函数通知条件变量；</p>
-<p>packet_queue_start函数在上锁状态下将abort_request设置为0，serial加1；</p>
-<p>packet_queue_get是唯一的读取函数接受四个参数，第一个参数q指定PacketQueue，第二个参数pkt是一个指向AVPacket的指针，用于存储从q中读出的数据，第三个参数表示是否为阻塞模式，如果为0，那么当队列中没有数据时，函数会立即返回，否则将会调用SDL_CondWait()等待直到队列中有数据。第四个参数是一个传入的int变量地址，从fifo队列中读取的MyAVPacketList类型数据包含AVPacket类型的数据和一个序列号，这个序列号会被传给第四个参数指定的int变量。</p>
-<p>packet_queue_put_private函数负责将参数pkt指向的AVPacket类型的数据连同队列q的序列号一起包装成一个MyAVPacketList类型数据写入fifo队列，然后将nb_packets加1，size加上MyAVPacketList的大小和其指向的AVPacket的大小，duration加上AVPacket的duration。写入成功后调用SDL_CondSignal()通知条件变量。该函数是执行具体写入动作的函数，只是供packet_queue_put函数调用，所以函数中没有上锁。</p>
-<p>packet_queue_put检查参数pkt指定的数据是否为null，不为null时才在上锁状态下调用packet_queue_put_private执行真正的写入。</p>
-<p>packet_queue_put_nullpacket用于向队列中写入一个没有数据的AVPecket包，设置了pkg的stream_index后直接调用packet_queue_put。该函数存在的意义是一个空包可以作为一个刷新包通知解码器已经到达流结束的位置了，解码器读到刷新包后会将缓存的帧数据返回。</p>
-<p>分析完所有函数的功能，我们做一个简短的总结。PacketQueue中维护了一个fifo队列，队列中存储MyAVPacketList类型数据而不直接存储AVPacket类型数据的原因是需要为每个包添加一个序列号，这个序列号在包被放入队列时会被设置为队列的序列号，序列号用于标识一段连续的内容，如果两个包的序列号不同，说明他们所表示的内容时间上不连续。需要互斥量和条件变量的原因是队列的读写操作分别在不同线程，需要线程同步。</p>
+                <p><strong>不变量（invariants）</strong>是指针对一个特定的数据结构永远为真的一种状态。比如“这个变量保存着链表中条目的数量”。当链表被修改时，不变量被打破，例如当插入和删除操作完成之前。<strong>竞态条件（race condition）</strong>是指程序输出的结果依赖于多个线程的执行顺序。我们常说的竞态条件是指会引发错误的情形。C++定义的<strong>数据竞争（data race）</strong>是指对单个对象的并行修改从而引发竞态条件的一种情形。数据竞争会引发未定义的行为。</p>
+<p>竞态条件比较难发现，因为它发生时间的不确定性，通常是转瞬即逝的。但是随着系统运行时间和负荷的增加，竞态条件会更加容易发生。避免发生竞态条件可以通过使用一种保护机制，使得一次只有一个线程修改数据，例如加锁；还可以通过修改数据结构的设计和它的不变量从而使得数据的修改操作可以通过一系列无法分割的操作来实现，每个操作都可以保护不变量，这种方式涉及到无锁编程（lock-free programming）；再有一种方式就是通过事务来实现，就像数据库操作一样。</p>
+<p>最简单也是最直接的加锁方式是使用互斥量std::mutex，对其调用std::lock()实现加锁，调用std::unlock()实现解锁：</p>
+<p><code>std::mutex m;</code><br><code>std::lock(m);</code><br><code>do_something();</code><br><code>std::unlock(m);</code></p>
+<p>这种方式常见的问题是修改数据后没有调用std::unlock()解锁导致其他线程无法获取锁，有时可能是忘记了，有时可能是do_someting()中抛出了异常导致程序提前退出。所以如果使用std::lock()和std::unlock()完成互斥操作需要程序员考虑到各种情况，保证在程序退出的所有路径中都调用了std::unlock()，例如异常处理。</p>
+<p>C++标准库提供了一种std::lock_guard&lt;&gt;类模板，为std::mutex实现了RAII习语，即在构造函数中获取锁，在析构函数中释放锁，将锁的生命周期与std::lock_guard&lt;&gt;对象的生命周期绑定，从而实现了自动解锁。使用std::lock_guard&lt;&gt;获取锁的方式如下：</p>
+<p><code>std::mutex m;</code><br><code>void func()&#123;</code><br>  <code>std::lock_guard&lt;std::mutex&gt; lg(m);</code><br>  <code>//C++17加入了类模板参数自动推断，所以这一行可以简写成</code><br>  <code>//std::lock_guard lg(m);</code><br>  <code>//C++17还引入了lock_guard的加强版scoped_lock</code><br>  <code>//std::scoped_lock lg(m);</code><br>  <code>do_something();</code><br><code>&#125;</code></p>
+<p>上述代码中当lg在函数的最开始获取锁，在函数完成操作并返回时，lg离开作用域，对象销毁的同时释放锁。与传统的手动方式相比，使用std::lock_guard&lt;&gt;显然更省时省力并更加可靠。</p>
+<p>使用mutex保护共享数据看似很安全，但是还是有其他隐患，例如do_something()这个函数具体做了什么事？如果这个函数返回了受保护数据的指针或者引用，那么意味着其它线程就可以在不获取锁的前提下对数据进行操作，从而形成数据竞争。避免这种情况有一个准则：<strong>不要将被保护的数据的指针或引用传递出锁的作用域，不管是直接返回，还是将之存储在外部可见的存储区域，或是将他们传递给用户提供的函数中作为参数。</strong></p>
+<p>即使单个操作是线程安全的，但是当这些操作组合在一起时同样会引发竞态条件，最简单的方式当然是使用互斥量将所有操作保护起来，但是这会大大影响性能。还有一种方式就是优化接口函数，将多个操作组合为一个操作，并用一个mutex进行保护。</p>
+<p>c++标准库还提供了一种比std::lock_guard&lt;&gt;更具灵活性的类：std::unique_lock&lt;&gt;，相比于std::lock_guard&lt;&gt;整个生命周期中都持有对mutex的锁，std::unique_lock&lt;&gt;并不是始终持有mutex的锁。</p>
+<p>std::unique_lock&lt;&gt;的第二个参数可以设置为:</p>
+<ol>
+<li>std::adopt_lock:表示为一个已经加锁的mutex创建一个lock_guard;</li>
+<li>std::defer_lock:表示表示为一个mutex创建一个lock_guard但是暂时不锁定它;</li>
+<li>std::try_lock:表示为一个mutex创建一个lock_guard并尝试锁定它;</li>
+<li>也可以设置为时间段或者时间点分别表示在时间段内或者某个时间点锁定mutex。</li>
+</ol>
+<p>std::unique_lock&lt;&gt;比std::lock_guard&lt;&gt;的占用稍大并且性能稍弱，因为前者需要维护锁状态，例如需要一个标志位来表示对象当前是否持有锁。在离开作用域时，如果std::unique_lock&lt;&gt;持有锁，则会自动调用std::unlock()释放锁，反之则一定不会调用std::unlock().可以通过owns_lock()函数查询std::unique_lock&lt;&gt;对象是否持有锁。除非有特定用途，std::lock_guard&lt;&gt;是更好的选择。</p>
+<p>一个使用std::unique_lock&lt;&gt;的场景就是延迟加锁，还有就是传递锁的所有权。例如</p>
+<p><code>std::unique_lock&lt;std::mutex&gt; get_lock()</code><br><code>&#123;</code><br>    <code>extern std::mutex some_mutex;</code><br>    <code>std::unique_lock&lt;std::mutex&gt; lk(some_mutex);</code><br>    <code>prepare_data();</code><br>    <code>return lk;</code><br><code>&#125;</code><br><code>void process_data()</code><br><code>&#123;</code><br>    <code>std::unique_lock&lt;std::mutex&gt; lk(get_lock());</code><br>    <code>do_something();</code><br><code>&#125;</code></p>
+<p>这里为什么不能用std::lock_guard&lt;&gt;？很简单，因为离开作用域后随着std::lock_guard&lt;&gt;对象的析构锁就被释放了，如果此时有其他线程对其加锁，那传递过程就失败了。而由于std::lock_guard&lt;&gt;并不一定持有锁，所以锁的所有权就可以通过移动语义在对象间传递。从函数返回对象，移动操作是自动进行的，其他时候需要调用std::move()来实现对象的移动。std::unique_lock&lt;&gt;和std::lock_guard&lt;&gt;的对象都是无法拷贝但是可移动。</p>
+<p>std::unique_lock&lt;&gt;还有一个特性是可以提前解锁，而不必等到其对象离开作用域，这一特性的意义在于当用户明确知道无需再占有锁时，可以及时释放，从而让其他线程可以获取锁。</p>
+<p>要合理控制锁的粒度，尽量不要在进行耗时操作时（如硬盘文件IO操作）持有锁。</p>
+<p>提到锁，一个绕不开的话题就是死锁。引发死锁的原因是线程间的相互等待，不光是互相等待对方释放锁，线程间相互join这种情况也能引发死锁。《C++Concurrency in Action 2nd Edition》中为避免死锁提供了若干建议：</p>
+<ol>
+<li><p>避免嵌套加锁：已经获取一个锁以后，不要再尝试获取锁，如果必须要加多个锁，可以使用std::lock()一次性请求。</p>
+</li>
+<li><p>避免加锁后执行用户提供的代码。本质上跟第一条相同，因为无法判定用户的代码中作了什么操作，如果用户代码中请求了锁，那么就违背了第一条建议。但是在编写泛型代码的时候，这种情况无法避免。</p>
+</li>
+<li><p>以固定顺序请求锁。当必须请求多个锁又无法使用std::lock()一次性请求时，最好的方法就是在每个线程中以一个固定顺序请求它们。这里所说的顺序固定是相对于所有线程，加锁的顺序都是一致的，类似如下函数：</p>
+<p>a.exchange_data_with(b);</p>
+<p>两个实例互换数据，调用方和作为参数的一方实例都需要加锁，就不能单纯的在函数中先lock a再lock b，因为如果当调用主体变了，加锁的顺序也就随之变了，应该保证不论谁是调用方，在函数中的加锁顺序都是a先于b或者相反。</p>
+<p>再比如多线程访问双向链表，每次对当前节点加锁，读取数据，然后再请求下一个节点的锁，成功后释放当前节点的锁。如果不能保证绝对顺序的一致，那么当两个线程分别从链表的头尾进行访问时，在中间的某个点相遇时就会遭遇死锁。此时想要防止死锁可以通过限制链表的访问顺序来实现。</p>
+</li>
+<li><p>为锁引入层级概念。这其实是第三条的一种特例。具体做法是将应用程序进行分层，然后标记每个层次的每个锁，当代码试图请求锁时，如果已经在更低的层级获取到了一个锁，那么本次加锁会失败。以此来保证加锁的顺序一致。</p>
+</li>
+</ol>
+<p>有时我们需要保证在多线程的场景下一个操作只调用一次。像延迟初始化的场景，例如数据库操作，每次操作之前都要确认一下连接是否建立，如果没有就需要创建连接并且这个操作只能进行一次。在没有更好的办法之前，我们可能会使用现有学到的东西写出如下代码：</p>
+<p><code>&#123;</code><br>  <code>std::unique_lock&lt;std::mutex&gt; lk(resource_mutex);</code><br>    <code>if(!connected)</code><br>    <code>&#123;</code><br>        <code>connect_db();</code><br>    <code>&#125;</code><br>    <code>lk.unlock();</code><br><code>do_something();</code><br><code>&#125;</code></p>
+<p>这种写法可能是最下意识的写法了，并且也能达到目的，但是这种写法有一个问题，因为每次请求都要加锁判断是否存在数据库连接，所有的线程会去抢占同一个锁，当有大量的并行的访问请求到达时，会造成线程的排队从而降低性能。为此，C++标准库提供了一种解决方案：std::call_once()，该函数配合std::once_flag对象使用可以保证某个函数只被调用一次。具体用法如下：</p>
+<p><code>std::once_flag flag;</code><br><code>std::call_once(flag,connect_db);</code><br><code>do_something();</code></p>
+<p>使用这种方式，所有的互斥操作就交由标准库执行，使用这种方式比直接使用mutex性能要强，尤其是当像connect_db这样的一次性操作已经执行过时。</p>
+<p>C++11标准后出现了替代std::call_once()的方式，就是使用static声明全局静态变量。C++11以后，标准规定static变量在被首次访问之前已经完成了初始化，并且这种操作是线程安全的。利用这个特性，我们可以很容易写出线程安全的单例模式的代码：</p>
+<p><code>class X；</code><br><code>X&amp; get_instance()&#123;</code><br>  <code>static X x;</code><br>  <code>return x;</code><br><code>&#125;</code></p>
+<p>上述两种机制只是在初始化时保护数据，对数据的修改只是在初始化时进行一次，如果遇到偶尔修改的的数据，该用什么方式呢？有些数据可能很长时间才会被修改一次，如DNS缓存数据，修改这种数据的时候我们需要保证其他线程的读取操作是被阻塞的以防止读到错误的数据。最简单的方式当然还是使用一个mutex，读取和修改操作前先获取锁。但是为了一个偶然的写操作而让所有的读操作去请求锁显然是不合理的，而且会大大影响性能。C++提供了一种读写锁的机制来应对这种场景。它允许多个读操作同时用有锁，但是只允许一个写操作用有锁，并且当写操作拥有锁时，其他读操作无法再获取锁。</p>
+<p>C++14提供了std::shared_timed_mutex,C++17增加了std::shared_mutex，C++11则没有提供读写锁。写锁的获取可以使用std::lock_guard或std::unique_lock，读锁的获取可以使用std::shared_lock；</p>
+<p>标准库还提供了递归锁，普通的mutex多次加锁会导致未定义的行为，但是std::recursive_mutex可以多次上锁，但是当你发现你需要用递归锁的时候，最好是重新审视一下你的设计。</p>
+<p>参考书目：《C++Concurrency in Action 2nd Edition》</p>
 
                 
             </div>
@@ -352,7 +380,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/">https://wxyfq.github.io/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9APacketQueue/</a>
+                    <a href="https://wxyfq.github.io/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">https://wxyfq.github.io/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -390,16 +418,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/ffplay/">
-                                    <span class="chip bg-color">ffplay</span>
+                                <a href="/tags/C/">
+                                    <span class="chip bg-color">C++</span>
                                 </a>
                             
-                                <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                                    <span class="chip bg-color">源码解析</span>
-                                </a>
-                            
-                                <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                                    <span class="chip bg-color">音视频</span>
+                                <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                    <span class="chip bg-color">多线程</span>
                                 </a>
                             
                         </div>
@@ -569,54 +593,52 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/11/30/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89%EF%BC%9AFrameQueue/">
+                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/14.jpg" class="responsive-img" alt="ffplay源码解析（四）：FrameQueue">
+                        <img src="/medias/featureimages/7.jpg" class="responsive-img" alt="C++多线程学习笔记：线程间数据共享">
                         
-                        <span class="card-title">ffplay源码解析（四）：FrameQueue</span>
+                        <span class="card-title">C++多线程学习笔记：线程间数据共享</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中FrameQueue
+                            介绍在多线程场景使用互斥量保护共享数据的方法
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-11-30
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                    ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
                                 </a>
                             
                             
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/ffplay/">
-                        <span class="chip bg-color">ffplay</span>
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
                     </a>
                     
-                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                        <span class="chip bg-color">源码解析</span>
-                    </a>
-                    
-                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                        <span class="chip bg-color">音视频</span>
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
                     </a>
                     
                 </div>
@@ -630,31 +652,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/11/29/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9AVideoState%E7%BB%93%E6%9E%84%E4%BD%93/">
+                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9Afuture/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="ffplay源码解析（二）：VideoState结构体">
+                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：future">
                         
-                        <span class="card-title">ffplay源码解析（二）：VideoState结构体</span>
+                        <span class="card-title">C++多线程学习笔记：future</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码中VideoState结构体
+                            介绍与future相关的packed_task、promise、shared future的用法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-29
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                    ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
                                 </a>
                             
                             
@@ -664,16 +686,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/ffplay/">
-                        <span class="chip bg-color">ffplay</span>
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
                     </a>
                     
-                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                        <span class="chip bg-color">源码解析</span>
-                    </a>
-                    
-                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                        <span class="chip bg-color">音视频</span>
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
                     </a>
                     
                 </div>
