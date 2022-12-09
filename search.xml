@@ -4,6 +4,60 @@
   
     
     <entry>
+      <title>C++多线程学习笔记：线程实参传递</title>
+      <link href="/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/"/>
+      <url>/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/</url>
+      
+        <content type="html"><![CDATA[<p>使用std::thread类和std::async()创建线程时的实参传递适用相同的规则，不同的是std::thread构造函数的第一个参数是表示任务函数的可调用对象，std::async()第一个参数是可选的launch发射策略，第二个参数（选择默认策略时是第一个参数）对应std::thread构造函数的第一参数。</p><p>以std::thread为例，想要传递实参，可以直接在线程构造函数中追加实参，实参个数和类型与任务函数的参数个数和类型对应，并且实参支持隐式转换，例如：</p><p><code>void f(int i,const std::string&amp; s);</code></p><p><code>std::thread t(f,3,&quot;hello&quot;);</code></p><p>传递给线程的实参默认是执行拷贝操作的，实参被拷贝进线程对象独占的内存当中并被当作右值传递。即使函数参数类型是引用，也遵循上述规则。如果实参发生隐式转换，该转换会在线程对象的上下文进行。上面的例子拷贝到线程对象上下文中的实参是一个const char*，然后在线程对象的上下文当中隐式转换为std::string。这一事实引发了一个问题，如下所示代码：</p><p><code>void f(int i,const string&amp; s);</code><br><code>void func()&#123;</code><br>    <code>char buffer[1024];</code><br>    <code>std::thread t(f,3,buffer);</code><br>    <code>t.detach();</code><br><code>&#125;</code></p><p>由于线程对象创建成功后调用detach()函数将线程与主线程卸离，func()随即执行完毕返回，局部变量buffer会被销毁，此时使用该局部变量的线程t中char*向std::string的隐式转换可能还未开始，当buffer被销毁后，线程t中对一个无效指针执行隐式转换，会导致未定义的行为。想要避免这种情况，可以在实参传入线程构造函数之前进行显式的转换：</p><p><code>std::thread t(f,3,std::string(buffer));</code></p><p>当希望任务函数能修改某一个对象的值时，我们可能会想要将对象的引用传入线程，所以可能会写下类似下面的代码：</p><p><code>void update_data(int id,Data&amp; data);//用于更新data数据的代码</code><br><code>void func(int id)&#123;</code><br>    <code>Data data;</code><br>    <code>std::thread t(update_data,id,data);</code><br>    <code>t.join();</code><br><code>&#125;</code></p><p>我们单独调用update_data(id,data)时，函数运行良好，但是当跟线程一起使用时，会出现一些意想不到的情况。上面的这段代码无法通过编译，因为线程的构造函数并不知道update_data的第二个参数是一个引用类型，所以它依然会将data整个拷贝到自己的独立存储区，我们知道线程中实参是以右值的形式传递的，而一个右值只能与右值引用或const左值引用绑定，而上述两种情况update_data()的第二个参数都不符合。所以线程内的实参传递会失败，解决方法告诉线程的构造函数data是作为引用传递到线程当中的，我们可以使用std::ref()达成目的：</p><p>std::thread t(update_data,id,std::ref(data));</p><p>这样在线程内部传递的就是data引用的右值引用：Data&amp; &amp;&amp;，通过引用折叠规则会变成Data&amp;，刚好与update_data()函数的第二个参数类型匹配。</p><p>也可以使用lambda表达式：</p><p>std::thread t([id,&amp;data]{update_data(id,data);});</p><p>std::thread构造函数的机制与bind内部的实现原理是一样的。所以我们也可以像使用bind时那样，第一个参数传入一个成员函数指针，第二个参数传递对象指针：</p><p><code>class X&#123;</code><br><code>public:</code><br>    <code>void func();</code><br><code>&#125;;</code><br><code>X x;</code><br><code>std::thread t(&amp;X::func,&amp;x);</code></p><p>有些对象不支持拷贝操作但支持移动语义，传入线程时可以使用移动语义。例如我们想要传递一个std::unique_ptr&lt;&gt;对象：</p><p><code>void do_something(std::unique_ptr&lt;big_object&gt;);//任务函数</code></p><p><code>std::unique_ptr&lt;big_object&gt; p(new big_object);</code></p><p><code>std::thread t(process_big_object,std::move(p));</code></p><p>std::thread对象本身也不支持拷贝但支持移动语义，所以我们可以通过移动线程对象来转移线程所有权：</p><p><code>void func();</code><br><code>std::thread t1(func);</code><br><code>std::thread t2 = std::move(t1);</code></p><p>转移线程对象所有权时要特别注意在转移过程中是否会导致某些线程在销毁前无法被join()或detach()：</p><p><code>std::thread t1(func1);</code><br><code>std::thread t2(func2);</code><br><code>t2=std::move(t1);</code></p><p>代码会导致程序终止，原因是t2原先持有的线程在t2获得t1线程的所有权后变成了“野线程”，再也无法被join()或detach()了。</p><p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》、《C++标准库第二版》、《Primer C++ 第五版》</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> C++多线程 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> C++ </tag>
+            
+            <tag> 多线程 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>C++多线程学习笔记：线程同步</title>
+      <link href="/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/"/>
+      <url>/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/</url>
+      
+        <content type="html"><![CDATA[<p>如果线程A需要等待线程B的某个操作完成才能继续执行，应该怎样编写代码？最简单直接的办法，设置一个标志位，线程A通过一个while循环不断去检查这个标志位的值，而线程B在完成某些操作后将标志位置位，所以在A的下一个循环中就可以读取到被置位的标志位，从而继续接下来的工作，当然标志位需要被一个互斥量保护起来。我们可能会写出下面这样的代码：</p><p><code>bool flag;</code><br><code>std::mutex m</code><br><code>void do_some_task()&#123;</code><br>  <code>...;//线程B完成某些耗时操作；</code><br>  <code>std::lock_guard&lt;std::mutex&gt; lg(m);</code><br>  <code>flag = true;</code><br><code>&#125;</code><br><code>void wait_for_flag()&#123;</code><br>  <code>std::unique_lock&lt;std::mutex&gt; ul(m);</code><br>  <code>while(!flag)&#123;//线程A在此不断检查标志位</code><br>    <code>lk.unlock();</code><br>    <code>lk.lock();</code><br>  <code>&#125;</code><br>  <code>do_something_after_waiting();</code><br><code>&#125;</code></p><p>这就是所谓的忙等待，它有一个很明显的缺点：线程A一直在消耗cpu时间片来查询flag状态，这会浪费掉珍贵的cpu执行时间，并且每次的查询过程中都会持有锁，这也就意味着与此同时其他想要请求锁的线程就需要等待。想象一下一堆线程等待同一个flag状态的场景吧，大量的cpu执行时间片被消耗在检查标志位上，被等待的线程获取到的执行时间片就会减少，导致需要花更长的时间才能执行完前置工作，好不容易flag置位的条件满足了，还要跟一堆检查标志位的等待线程抢占锁，成功获取锁后才能将flag成功置位，这边成功置位了，一堆等待线程又要排队抢占锁……</p><p>一种优化的方式是让等待线程在两次查询之间sleep一段时间，在sleep期间线程是阻塞状态，不会消耗cpu执行时间，其他线程也可以获取锁，好像解决了问题。但是sleep多久合适呢？时间太短，上述两个问题依旧会存在，时间太长，可能等待线程刚sleep，flag就被置位了，那只能等下次被唤醒是才能检查标志位，这就造成了响应不及时。</p><p>C++标准库提供的条件变量可以解决这些烦恼，一个条件变量可以跟一个事件或其他条件变量绑定，一个或多个线程可以等待这个条件变量，当一个条件变量被满足时，可以通知一个或多个线程进行响应。C++标准库提供了两种条件变量：std::condition_variable和std::condition_variable_any,在头文件<condition_variable>声明。条件变量需要跟互斥量一起使用来提供同步。前者只能跟std::mutex配合使用，后者则宽泛得多，可以跟任何满足互斥量最基本特性的对象配合使用，相应的也会消耗更多的资源，所以除非是明确需要特定的灵活特性，一般使用std::condition_variable就足够了，代码示例如下：</p><p><code>std::mutex mut;</code><br><code>std::queue&lt;data_chunk&gt; data_queue;</code><br><code>std::condition_variable data_cond;</code><br><code>void data_preparation_thread()//在线程A中执行</code><br><code>&#123;</code><br>    <code>while(more_data_to_prepare())</code><br>    <code>&#123;</code><br>        <code>data_chunk const data=prepare_data();</code><br>        <code>&#123;</code><br>            <code>std::lock_guard&lt;std::mutex&gt; lk(mut);</code><br>            <code>data_queue.push(data);</code><br>        <code>&#125;</code><br>        <code>data_cond.notify_one();</code><br>        <code>&#125;</code><br><code>&#125;</code></p><p><code>void data_processing_thread()//在线程B中执行</code><br><code>&#123;</code><br>    <code>while(true)</code><br>    <code>&#123;</code><br>        <code>std::unique_lock&lt;std::mutex&gt; lk(mut);</code><br>        <code>data_cond.wait(</code><br>            <code>lk,[]&#123;return !data_queue.empty();&#125;);</code><br>        <code>data_chunk data=data_queue.front();</code><br>        <code>data_queue.pop();</code><br>        <code>lk.unlock();</code><br>        <code>process(data);</code><br>                <code>if(is_last_chunk(data))</code><br>                <code>break;</code><br>    <code>&#125;</code><br><code>&#125;</code></p><p>线程A将数据放入队列后，使用条件变量对象调用notify_one()通知线程B。线程B中使用std::unique_lock&lt;&gt;锁定mut，然后使用条件变量调用wait(),wait()函数的第一个参数是std::unique_lock&lt;&gt;对象，第二个参数则是传入一个lambda表达式作为判断条件。</p><p>wait()函数对参数中的条件进行判断。如果条件没有满足，则释放锁并阻塞当前线程，当notify_one()函数被调用时，线程从阻塞状态被唤醒，重新请求锁并且再次对条件进行判断，此时如果条件满足，函数返回，锁不释放，如果条件依旧不满足，则释放锁并阻塞线程等待下一次唤醒。因为当条件未满足时，等待线程需要释放锁，之后再重新加锁，所以需要使用std::unique_lock&lt;&gt;而不是用std::lock_guard&lt;&gt;。后者会在等待线程阻塞时持有锁，这样工作线程就无法获取锁，自然也就无法向队列中添加数据，并且唤醒等待线程了。</p><p>wait()函数的第二个参数是一个判断条件，接受一切可调用对象作为输入，在wait()函数的执行过程中，作为判断条件的函数（或其他可调用对象）可能会被多次执行，wait()函数确保每次执行都是获取锁的状态，并且一旦条件满足，函数立即返回。有时等待线程在未被通知时也会请求锁并且检查条件，这种情况被称为假醒，假醒的次数跟库的实现方式有关，所以如果判断条件中有一些附加操作，需要做好这些操作被多次执行的准备。</p><p>多个线程等待同一个条件变量时，对条件变量调用notify_one()会唤醒一个等待线程，但是并不能确定是唤醒哪一个，甚至不能保证是否有线程在等待通知，有可能所有线程都在执行各自的任务，没有等待该条件变量。还有一种情景是多个线程需要被同时唤醒，这时可以使用notify_all()，这个函数可以唤醒所有阻塞在wait()的线程对条件进行检查。</p><p>使用条件变量进行线程同步通常适用于重复等待某一事件，等待线程通常会使用一个无限循环等待同一个条件的反复触发，通知信号也会被重复发送。那么对于那些只发生一次的同步事件，使用这种方式会有什么问题吗？我们需要一个互斥量，如果我们使用wait(lk)这样的写法，如果被等待的线程在等待线程执行wait()函数之前就下发了通知，那么等待线程将会永远阻塞在wait()函数那里，而且也无法应对假醒的场景。为了避免这种问题，我们在wait()的第二个参数里写入了判断条件，这样wait()会先判断条件是否满足再决定是否阻塞线程，但是有些时候等待线程可能没办法知道被等待线程怎样才算满足条件，要知道等待线程之所以使用条件变量，就是因为它很难直接去判断被等待的任务是否满足条件。一种改进方案是使用atomic的flag，被等待的线程执行完任务后修改flag值，等待线程在一个while循环中不停检查flag，这种方案不需要互斥量，也不用担心等待线程wait之前被等待任务就下发通知，也不用担心假醒，唯一的缺点就是等待线程一直在消耗硬件资源，因为它不停的在轮询查看flag状态而不是阻塞在那里，就像我们在文章开头提到的那样。将上述两者结合就是将wait的判断条件设置为对flag的判断。但是整个流程会变成这样：被等待的线程任务执行完了，然后通知等待线程可以开始你的工作了，等待线程被唤醒后并不是立刻开始工作，而是要先判断flag值再决定要不要执行接下来的任务，工作是完成了，但是给人的感觉很别扭，用户最初的想法可能只是在线程间传递一个同步信号。更好的方式是使用future和promise结合，等待线程通过future的wait()函数被阻塞(不消耗执行资源)，被等待的线程执行完后对promise执行set_value().对于简单的同步信号来讲，两者的类模板参数都设置为void就可以了，具体的使用方式我们在future的介绍文章中已经详细介绍过，此处不再赘述。</p><p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> C++多线程 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> C++ </tag>
+            
+            <tag> 多线程 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>C++多线程学习笔记：线程间数据共享</title>
       <link href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/"/>
       <url>/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/</url>

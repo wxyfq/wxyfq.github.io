@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>C++多线程学习笔记：使用std::thread类创建线程 | wenxy的博客</title>
+    <title>C++多线程学习笔记：线程实参传递 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/3.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/19.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">C++多线程学习笔记：使用std::thread类创建线程</h1>
+                    <h1 class="description center-align post-title">C++多线程学习笔记：线程实参传递</h1>
                 </div>
             </div>
         </div>
@@ -259,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-05
+                    2022-12-09
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-06
+                    2022-12-09
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.6k
+                    1.2k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    6 分
+                    4 分
                 </div>
                 
 
@@ -305,49 +305,32 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>自C++11开始，标准库增加了多线程的支持，使用标准库创建线程有两种方式：</p>
-<p>1.使用std::thread类创建线程实例</p>
-<p>2.使用std::async函数创建异步任务</p>
-<p>我们先从第一种开始介绍。无论是哪种创建方式，C++支持的可调用类型都可以作为参数传入，例如函数，函数指针，函数对象，lambda表达式，bind创建的对象以及function类型等。我们先准备几个可调用对象：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">print_per_second</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">    cout&lt;&lt;<span class="string">&quot;hello world from thread：&quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">    this_thread::<span class="built_in">sleep_for</span>(chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">print_once</span><span class="params">()</span></span>&#123;</span><br><span class="line">    cout&lt;&lt;<span class="string">&quot;hello world from thread： &quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Task</span>&#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">operator</span><span class="params">()</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">      cout&lt;&lt;<span class="string">&quot;hello world from thread：&quot;</span>&lt;&lt;std::this_thread::<span class="built_in">get_id</span>()&lt;&lt;endl;</span><br><span class="line">      this_thread::<span class="built_in">sleep_for</span>(chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>两个print函数和一个重载了函数调用运算符的类，函数和重载的函数调用运算符执行的操作也很简单，只是输出一行带有线程id的信息，get_id是命名空间this_thread提供的一个全局函数，作用是返回当前线程的id。</p>
-<p>现在我们创建第一个线程，创建方式也很简单，我们使用print_once的函数名作为阐述传给std::thread的构造函数就能得到一个线程实例，并且实例创建完成后，线程自动开始运行：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>编译运行这段代码，发现并没有按照我们预期运行，反而是被终止了：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">libc++abi: terminating</span><br><span class="line">信号: SIGABRT (signal SIGABRT)</span><br></pre></td></tr></table></figure>
-
-<p>产生这种错误的原因是C++标准规定，线程对象在销毁前一定要调用join()或detach()，否则会导致程序被终止（terminated）调用join()会使程序阻塞在调用点直到线程执行结束，相当于等待线程完成；调用detach()则是将线程与主线程分离，分离后的线程会独自运行直到线程调用的函数返回或主程序退出。</p>
-<p>对于一个线程实例只能调用一次join()或detach()，多次调用会导致程序抛出异常。为了判断线程对象是否可以调用join()或detach()，标准库提供了一个joinable()函数返回一个表示线程对象joinable状态的bool值。当joinable()的返回值为true时，才可以对线程对象调用join()或detach();</p>
-<p>我们修改刚才的代码，在主线程中等待t1结束：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  t1.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这样代码就正常运行了，当然这里也可以调用detach()，只不过这样一来，如果print_once执行的是某种耗时操作，例如等待几秒后再打印信息，那么在程序退出之前，该信息就无法打印出来了。</p>
-<p>还有一点需要注意的是标准规定的是在线程对象销毁之前一定要对其调用join()或detach()，这就可能造成一个比较有意思的现象，看下面的代码：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(print_once)</span></span>;</span><br><span class="line">  <span class="function">std::thread <span class="title">t2</span><span class="params">(print_per_second)</span></span>;</span><br><span class="line">  t2.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面的代码只对t2调用了join()，但是对t1却没有调用，这段代码编译运行后并没有报错。原因是t2线程执行的函数是一个无限循环的函数，主线程会一直等待在t2.join()这个调用点不退出，所以t1就是始终在作用域，不会被销毁，所以也不会因为没有对其调用join()而导致程序终止。想要验证这一点也很简单，只需要将t2.join()改成t2.detach()即可。t2线程被分离，主线程不等待t2结束直接退出，t1在离开作用域之前没有调用join()或detach()，导致程序异常退出。代码比较简单，就不展示了。</p>
-<p>另外一点需要注意的是使用std::thread默认构造函数创建的对象是unjoinable的，也就是说使用如下代码创建的线程对象不能调用join()或detach()，否则程序会抛出异常。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std::thread t1;</span><br></pre></td></tr></table></figure>
-
-<p>在上面的例子中我们已经使用print_once和print_per_second函数名作为参数传递给std::thread的构造函数创建出了线程对象，使用函数名作为参数会默认传递函数的指针。一开始我们已经说过，std::thread的构造函数可以接受所有可调用对象作为参数，所以作为重载了函数调用运算符的类的实例自然也可以作为参数传递给std::thread以构造线程对象，具体代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">  Task task;</span><br><span class="line">  <span class="function">std::thread <span class="title">t1</span><span class="params">(task)</span></span>;</span><br><span class="line">  t1.<span class="built_in">join</span>();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当然我们也可以使用匿名对象作为参数，不过这种情况需要注意，使用下面的写法是不行的：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">(Task())</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>这种写法会让编译器认为这是一个函数声明，该函数的参数为一个没有参数且返回Task类型队形的函数指针，函数返回一个std::thread类型的对象。为了让编译器认为这是线程实例的初始化而不是一个函数声明，可以使用下面两种写法中的一种：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">((Task()))</span></span>;</span><br><span class="line">std::thread t1&#123;<span class="built_in">Task</span>()&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>第一种写法是在外面多加一个括号，阻止将改行代码解释为函数声明；第二种写法是利用统一初始化语法完成实例的创建。</p>
-<p>C++11新增了对lambda表达式的支持，编译器在解释lambda表达式时，会将其翻译成一个匿名类的匿名对象，该匿名类中含所有一个重载的函数调用运算符，所以lambda表达式也可以作为参数传递给线程的构造函数：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">([]()&#123;cout&lt;&lt;<span class="string">&quot;hello world&quot;</span>&lt;&lt;endl;&#125;)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>C++11新增了一个function模板，可以用来存储任何可调用对象，相应的，具体的function类型也是可调用对象，也可以作为线程构造函数的参数：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">function&lt;<span class="type">void</span>()&gt; func = print_once;</span><br><span class="line"><span class="function">std::thread <span class="title">t1</span><span class="params">(func)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<p>函数模板bind也返回一个可调用对象，也可以作为线程构造函数的参数，代码就不写了，有兴趣的可以自行了解。</p>
+                <p>使用std::thread类和std::async()创建线程时的实参传递适用相同的规则，不同的是std::thread构造函数的第一个参数是表示任务函数的可调用对象，std::async()第一个参数是可选的launch发射策略，第二个参数（选择默认策略时是第一个参数）对应std::thread构造函数的第一参数。</p>
+<p>以std::thread为例，想要传递实参，可以直接在线程构造函数中追加实参，实参个数和类型与任务函数的参数个数和类型对应，并且实参支持隐式转换，例如：</p>
+<p><code>void f(int i,const std::string&amp; s);</code></p>
+<p><code>std::thread t(f,3,&quot;hello&quot;);</code></p>
+<p>传递给线程的实参默认是执行拷贝操作的，实参被拷贝进线程对象独占的内存当中并被当作右值传递。即使函数参数类型是引用，也遵循上述规则。如果实参发生隐式转换，该转换会在线程对象的上下文进行。上面的例子拷贝到线程对象上下文中的实参是一个const char*，然后在线程对象的上下文当中隐式转换为std::string。这一事实引发了一个问题，如下所示代码：</p>
+<p><code>void f(int i,const string&amp; s);</code><br><code>void func()&#123;</code><br>    <code>char buffer[1024];</code><br>    <code>std::thread t(f,3,buffer);</code><br>    <code>t.detach();</code><br><code>&#125;</code></p>
+<p>由于线程对象创建成功后调用detach()函数将线程与主线程卸离，func()随即执行完毕返回，局部变量buffer会被销毁，此时使用该局部变量的线程t中char*向std::string的隐式转换可能还未开始，当buffer被销毁后，线程t中对一个无效指针执行隐式转换，会导致未定义的行为。想要避免这种情况，可以在实参传入线程构造函数之前进行显式的转换：</p>
+<p><code>std::thread t(f,3,std::string(buffer));</code></p>
+<p>当希望任务函数能修改某一个对象的值时，我们可能会想要将对象的引用传入线程，所以可能会写下类似下面的代码：</p>
+<p><code>void update_data(int id,Data&amp; data);//用于更新data数据的代码</code><br><code>void func(int id)&#123;</code><br>    <code>Data data;</code><br>    <code>std::thread t(update_data,id,data);</code><br>    <code>t.join();</code><br><code>&#125;</code></p>
+<p>我们单独调用update_data(id,data)时，函数运行良好，但是当跟线程一起使用时，会出现一些意想不到的情况。上面的这段代码无法通过编译，因为线程的构造函数并不知道update_data的第二个参数是一个引用类型，所以它依然会将data整个拷贝到自己的独立存储区，我们知道线程中实参是以右值的形式传递的，而一个右值只能与右值引用或const左值引用绑定，而上述两种情况update_data()的第二个参数都不符合。所以线程内的实参传递会失败，解决方法告诉线程的构造函数data是作为引用传递到线程当中的，我们可以使用std::ref()达成目的：</p>
+<p>std::thread t(update_data,id,std::ref(data));</p>
+<p>这样在线程内部传递的就是data引用的右值引用：Data&amp; &amp;&amp;，通过引用折叠规则会变成Data&amp;，刚好与update_data()函数的第二个参数类型匹配。</p>
+<p>也可以使用lambda表达式：</p>
+<p>std::thread t([id,&amp;data]{update_data(id,data);});</p>
+<p>std::thread构造函数的机制与bind内部的实现原理是一样的。所以我们也可以像使用bind时那样，第一个参数传入一个成员函数指针，第二个参数传递对象指针：</p>
+<p><code>class X&#123;</code><br><code>public:</code><br>    <code>void func();</code><br><code>&#125;;</code><br><code>X x;</code><br><code>std::thread t(&amp;X::func,&amp;x);</code></p>
+<p>有些对象不支持拷贝操作但支持移动语义，传入线程时可以使用移动语义。例如我们想要传递一个std::unique_ptr&lt;&gt;对象：</p>
+<p><code>void do_something(std::unique_ptr&lt;big_object&gt;);//任务函数</code></p>
+<p><code>std::unique_ptr&lt;big_object&gt; p(new big_object);</code></p>
+<p><code>std::thread t(process_big_object,std::move(p));</code></p>
+<p>std::thread对象本身也不支持拷贝但支持移动语义，所以我们可以通过移动线程对象来转移线程所有权：</p>
+<p><code>void func();</code><br><code>std::thread t1(func);</code><br><code>std::thread t2 = std::move(t1);</code></p>
+<p>转移线程对象所有权时要特别注意在转移过程中是否会导致某些线程在销毁前无法被join()或detach()：</p>
+<p><code>std::thread t1(func1);</code><br><code>std::thread t2(func2);</code><br><code>t2=std::move(t1);</code></p>
+<p>代码会导致程序终止，原因是t2原先持有的线程在t2获得t1线程的所有权后变成了“野线程”，再也无法被join()或detach()了。</p>
 <p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》、《C++标准库第二版》、《Primer C++ 第五版》</p>
 
                 
@@ -375,7 +358,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/">https://wxyfq.github.io/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8thread%E7%B1%BB%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B/</a>
+                    <a href="https://wxyfq.github.io/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/">https://wxyfq.github.io/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -588,29 +571,30 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/12/05/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9Aasync()%E4%B8%8Ethread%E5%AF%B9%E6%AF%94/">
+                <a href="/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="C++多线程学习笔记：async()与thread对比">
+                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="C++多线程学习笔记：线程实参传递">
                         
-                        <span class="card-title">C++多线程学习笔记：async()与thread对比</span>
+                        <span class="card-title">C++多线程学习笔记：线程实参传递</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            对比std::thread和std::async()创建线程的优缺点
+                            介绍使用std::thread和std::async时的实参传递规则
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-05
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-09
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -623,6 +607,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -645,31 +630,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/04/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%EF%BC%88%E4%B8%83%EF%BC%89%EF%BC%9A%E8%A7%86%E9%A2%91%E6%92%AD%E6%94%BE/">
+                <a href="/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/18.jpg" class="responsive-img" alt="ffplay源码解析（七）：视频播放">
+                        <img src="/medias/featureimages/10.jpg" class="responsive-img" alt="C++多线程学习笔记：线程同步">
                         
-                        <span class="card-title">ffplay源码解析（七）：视频播放</span>
+                        <span class="card-title">C++多线程学习笔记：线程同步</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            解析ffplay源码视频播放原理
+                            介绍多线程同步的知识
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-04
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-08
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/ffplay%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="post-category">
-                                    ffplay源码解析
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
                                 </a>
                             
                             
@@ -679,16 +664,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/ffplay/">
-                        <span class="chip bg-color">ffplay</span>
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
                     </a>
                     
-                    <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
-                        <span class="chip bg-color">源码解析</span>
-                    </a>
-                    
-                    <a href="/tags/%E9%9F%B3%E8%A7%86%E9%A2%91/">
-                        <span class="chip bg-color">音视频</span>
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
                     </a>
                     
                 </div>
