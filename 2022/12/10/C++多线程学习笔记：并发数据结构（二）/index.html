@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>C++多线程学习笔记：线程同步 | wenxy的博客</title>
+    <title>C++多线程学习笔记：并发数据结构（二） | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/10.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/6.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">C++多线程学习笔记：线程同步</h1>
+                    <h1 class="description center-align post-title">C++多线程学习笔记：并发数据结构（二）</h1>
                 </div>
             </div>
         </div>
@@ -259,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-08
+                    2022-12-10
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-09
+                    2022-12-10
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2.2k
+                    1.3k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    7 分
+                    5 分
                 </div>
                 
 
@@ -305,19 +305,16 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>如果线程A需要等待线程B的某个操作完成才能继续执行，应该怎样编写代码？最简单直接的办法，设置一个标志位，线程A通过一个while循环不断去检查这个标志位的值，而线程B在完成某些操作后将标志位置位，所以在A的下一个循环中就可以读取到被置位的标志位，从而继续接下来的工作，当然标志位需要被一个互斥量保护起来。我们可能会写出下面这样的代码：</p>
-<p><code>bool flag;</code><br><code>std::mutex m</code><br><code>void do_some_task()&#123;</code><br>  <code>...;//线程B完成某些耗时操作；</code><br>  <code>std::lock_guard&lt;std::mutex&gt; lg(m);</code><br>  <code>flag = true;</code><br><code>&#125;</code><br><code>void wait_for_flag()&#123;</code><br>  <code>std::unique_lock&lt;std::mutex&gt; ul(m);</code><br>  <code>while(!flag)&#123;//线程A在此不断检查标志位</code><br>    <code>lk.unlock();</code><br>    <code>lk.lock();</code><br>  <code>&#125;</code><br>  <code>do_something_after_waiting();</code><br><code>&#125;</code></p>
-<p>这就是所谓的忙等待，它有一个很明显的缺点：线程A一直在消耗cpu时间片来查询flag状态，这会浪费掉珍贵的cpu执行时间，并且每次的查询过程中都会持有锁，这也就意味着与此同时其他想要请求锁的线程就需要等待。想象一下一堆线程等待同一个flag状态的场景吧，大量的cpu执行时间片被消耗在检查标志位上，被等待的线程获取到的执行时间片就会减少，导致需要花更长的时间才能执行完前置工作，好不容易flag置位的条件满足了，还要跟一堆检查标志位的等待线程抢占锁，成功获取锁后才能将flag成功置位，这边成功置位了，一堆等待线程又要排队抢占锁……</p>
-<p>一种优化的方式是让等待线程在两次查询之间sleep一段时间，在sleep期间线程是阻塞状态，不会消耗cpu执行时间，其他线程也可以获取锁，好像解决了问题。但是sleep多久合适呢？时间太短，上述两个问题依旧会存在，时间太长，可能等待线程刚sleep，flag就被置位了，那只能等下次被唤醒是才能检查标志位，这就造成了响应不及时。</p>
-<p>C++标准库提供的条件变量可以解决这些烦恼，一个条件变量可以跟一个事件或其他条件变量绑定，一个或多个线程可以等待这个条件变量，当一个条件变量被满足时，可以通知一个或多个线程进行响应。C++标准库提供了两种条件变量：std::condition_variable和std::condition_variable_any,在头文件<condition_variable>声明。条件变量需要跟互斥量一起使用来提供同步。前者只能跟std::mutex配合使用，后者则宽泛得多，可以跟任何满足互斥量最基本特性的对象配合使用，相应的也会消耗更多的资源，所以除非是明确需要特定的灵活特性，一般使用std::condition_variable就足够了，代码示例如下：</p>
-<p><code>std::mutex mut;</code><br><code>std::queue&lt;data_chunk&gt; data_queue;</code><br><code>std::condition_variable data_cond;</code><br><code>void data_preparation_thread()//在线程A中执行</code><br><code>&#123;</code><br>    <code>while(more_data_to_prepare())</code><br>    <code>&#123;</code><br>        <code>data_chunk const data=prepare_data();</code><br>        <code>&#123;</code><br>            <code>std::lock_guard&lt;std::mutex&gt; lk(mut);</code><br>            <code>data_queue.push(data);</code><br>        <code>&#125;</code><br>        <code>data_cond.notify_one();</code><br>        <code>&#125;</code><br><code>&#125;</code></p>
-<p><code>void data_processing_thread()//在线程B中执行</code><br><code>&#123;</code><br>    <code>while(true)</code><br>    <code>&#123;</code><br>        <code>std::unique_lock&lt;std::mutex&gt; lk(mut);</code><br>        <code>data_cond.wait(</code><br>            <code>lk,[]&#123;return !data_queue.empty();&#125;);</code><br>        <code>data_chunk data=data_queue.front();</code><br>        <code>data_queue.pop();</code><br>        <code>lk.unlock();</code><br>        <code>process(data);</code><br>                <code>if(is_last_chunk(data))</code><br>                <code>break;</code><br>    <code>&#125;</code><br><code>&#125;</code></p>
-<p>线程A将数据放入队列后，使用条件变量对象调用notify_one()通知线程B。线程B中使用std::unique_lock&lt;&gt;锁定mut，然后使用条件变量调用wait(),wait()函数的第一个参数是std::unique_lock&lt;&gt;对象，第二个参数则是传入一个lambda表达式作为判断条件。</p>
-<p>wait()函数对参数中的条件进行判断。如果条件没有满足，则释放锁并阻塞当前线程，当notify_one()函数被调用时，线程从阻塞状态被唤醒，重新请求锁并且再次对条件进行判断，此时如果条件满足，函数返回，锁不释放，如果条件依旧不满足，则释放锁并阻塞线程等待下一次唤醒。因为当条件未满足时，等待线程需要释放锁，之后再重新加锁，所以需要使用std::unique_lock&lt;&gt;而不是用std::lock_guard&lt;&gt;。后者会在等待线程阻塞时持有锁，这样工作线程就无法获取锁，自然也就无法向队列中添加数据，并且唤醒等待线程了。</p>
-<p>wait()函数的第二个参数是一个判断条件，接受一切可调用对象作为输入，在wait()函数的执行过程中，作为判断条件的函数（或其他可调用对象）可能会被多次执行，wait()函数确保每次执行都是获取锁的状态，并且一旦条件满足，函数立即返回。有时等待线程在未被通知时也会请求锁并且检查条件，这种情况被称为假醒，假醒的次数跟库的实现方式有关，所以如果判断条件中有一些附加操作，需要做好这些操作被多次执行的准备。</p>
-<p>多个线程等待同一个条件变量时，对条件变量调用notify_one()会唤醒一个等待线程，但是并不能确定是唤醒哪一个，甚至不能保证是否有线程在等待通知，有可能所有线程都在执行各自的任务，没有等待该条件变量。还有一种情景是多个线程需要被同时唤醒，这时可以使用notify_all()，这个函数可以唤醒所有阻塞在wait()的线程对条件进行检查。</p>
-<p>使用条件变量进行线程同步通常适用于重复等待某一事件，等待线程通常会使用一个无限循环等待同一个条件的反复触发，通知信号也会被重复发送。那么对于那些只发生一次的同步事件，使用这种方式会有什么问题吗？我们需要一个互斥量，如果我们使用wait(lk)这样的写法，如果被等待的线程在等待线程执行wait()函数之前就下发了通知，那么等待线程将会永远阻塞在wait()函数那里，而且也无法应对假醒的场景。为了避免这种问题，我们在wait()的第二个参数里写入了判断条件，这样wait()会先判断条件是否满足再决定是否阻塞线程，但是有些时候等待线程可能没办法知道被等待线程怎样才算满足条件，要知道等待线程之所以使用条件变量，就是因为它很难直接去判断被等待的任务是否满足条件。一种改进方案是使用atomic的flag，被等待的线程执行完任务后修改flag值，等待线程在一个while循环中不停检查flag，这种方案不需要互斥量，也不用担心等待线程wait之前被等待任务就下发通知，也不用担心假醒，唯一的缺点就是等待线程一直在消耗硬件资源，因为它不停的在轮询查看flag状态而不是阻塞在那里，就像我们在文章开头提到的那样。将上述两者结合就是将wait的判断条件设置为对flag的判断。但是整个流程会变成这样：被等待的线程任务执行完了，然后通知等待线程可以开始你的工作了，等待线程被唤醒后并不是立刻开始工作，而是要先判断flag值再决定要不要执行接下来的任务，工作是完成了，但是给人的感觉很别扭，用户最初的想法可能只是在线程间传递一个同步信号。更好的方式是使用future和promise结合，等待线程通过future的wait()函数被阻塞(不消耗执行资源)，被等待的线程执行完后对promise执行set_value().对于简单的同步信号来讲，两者的类模板参数都设置为void就可以了，具体的使用方式我们在future的介绍文章中已经详细介绍过，此处不再赘述。</p>
-<p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》</p>
+                <p>上一章我们介绍了一个基于锁实现的线程安全的stack，在文章的末尾我们也指出了这种实现方式的弊端，在此基础上我们加以改进，引入条件变量实现一个线程安全的队列，样例代码来自《C++Concurrency in Action 2nd Edition》：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">template&lt;typename T&gt;</span><br><span class="line">class threadsafe_queue</span><br><span class="line">&#123;</span><br><span class="line"> private:</span><br><span class="line">  mutable std::mutex mut;</span><br><span class="line">  std::queue&lt;T&gt; data_queue;</span><br><span class="line">  std::condition_variable data_cond;</span><br><span class="line"> public:</span><br><span class="line">  threadsafe_queue()</span><br><span class="line">  &#123;&#125;</span><br><span class="line">  threadsafe_queue(const threadsafe_queue&amp; other)</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(other.mut);</span><br><span class="line">    data_queue=other.data_queue;</span><br><span class="line">  &#125;</span><br><span class="line">  threadsafe_queue operator=(const threadsafe_queue&amp;)=delete;</span><br><span class="line">  void push(T new_value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_queue.push(new_value);</span><br><span class="line">    data_cond.notify_one();</span><br><span class="line">  &#125;</span><br><span class="line">  void wait_and_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_cond.wait(lk,[this]&#123;return !data_queue.empty();&#125;);</span><br><span class="line">    value=std::move(data_queue.front());</span><br><span class="line">    data_queue.pop();</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; wait_and_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_cond.wait(lk,[this]&#123;return !data_queue.empty();&#125;);</span><br><span class="line">    std::shared_ptr&lt;T&gt; res(std::make_shared&lt;T&gt;(std::move(data_queue.front()));</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  bool try_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    if(data_queue.empty())</span><br><span class="line">      return false;</span><br><span class="line">    value=std::move(data_queue.front());</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return true;</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    if(data_queue.empty())</span><br><span class="line">      return std::shared_ptr&lt;T&gt;();</span><br><span class="line">    std::shared_ptr&lt;T&gt; res(std::make_shared&lt;T&gt;(std::move(data_queue.front()));</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  bool empty() const</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    return data_queue.empty();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>pop()接口为什么设计成传引用和返回智能指针我们已经在上一章分析过原因。这次我们我们主要看一下条件变量的应用：每次push数据的时候对条件变量调用notify_one()唤醒等待线程；pop操作设计了四个接口函数，分别是两个阻塞函数和两个非阻塞函数，阻塞函数会对条件变量调用wait()加上判断条件等待队列中有数据才返回，非阻塞函数则是立刻返回，无数据就返回false或空指针。读线程如果需要等待数据，就调用wait_and_pop的两个重载函数，否则就调用try_pop的两个重载函数并且加上处理读取失败的代码。相比于threadsafe_stack那种栈为空就抛出异常的做法，这种设计方式显然更加友好。</p>
+<p>仔细分析上面的代码，会发现一个小小的瑕疵。std::make_shared&lt;&gt;()函数可能会抛出bad_alloc或任何T构造函数抛出的异常（std::shared_ptr&lt;&gt;的拷贝构造函数不会抛出异常），所以如果一个线程调用std::shared_ptr<T> wait_and_pop()函数并阻塞在wait()函数，之后因为notify_one()函数的调用被唤醒，但是在创建智能指针的时候抛出异常导致没有成功读取数据，于此同时其他线程也不会再被唤醒了，只能等待下一次notify_one()的调用或者假醒。可以将notify_one()修改成notify_all()，不过需要承受的代价就是除了成功抢占锁的线程，其他被唤醒的线程无功而返；也可以在捕获std::make_shared&lt;&gt;()的异常后再异常处理中再调用一次notify_one();再有就是直接在队列中存放智能指针，因为智能指针的传递是不会抛出异常的，我们看一下基于这种方式的实现，样例代码来自《C++Concurrency in Action 2nd Edition》：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">template&lt;typename T&gt;</span><br><span class="line">class threadsafe_queue</span><br><span class="line">&#123;</span><br><span class="line"> private:</span><br><span class="line">  mutable std::mutex mut;</span><br><span class="line">  std::queue&lt;std::shared_ptr&lt;T&gt; &gt; data_queue;</span><br><span class="line">  std::condition_variable data_cond;</span><br><span class="line"> public:</span><br><span class="line">  threadsafe_queue()</span><br><span class="line">  &#123;&#125;</span><br><span class="line">  void wait_and_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_cond.wait(lk,[this]&#123;return !data_queue.empty();&#125;);</span><br><span class="line">    value=std::move(*data_queue.front());</span><br><span class="line">    data_queue.pop();</span><br><span class="line">  &#125;</span><br><span class="line">  bool try_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    if(data_queue.empty())</span><br><span class="line">      return false;</span><br><span class="line">    value=std::move(*data_queue.front());</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return true;</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; wait_and_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_cond.wait(lk,[this]&#123;return !data_queue.empty();&#125;);</span><br><span class="line">    std::shared_ptr&lt;T&gt; res=data_queue.front();</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    if(data_queue.empty())</span><br><span class="line">      return std::shared_ptr&lt;T&gt;();</span><br><span class="line">    std::shared_ptr&lt;T&gt; res=data_queue.front();</span><br><span class="line">    data_queue.pop();</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  void push(T new_value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; data(</span><br><span class="line">        std::make_shared&lt;T&gt;(std::move(new_value)));</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    data_queue.push(data);</span><br><span class="line">    data_cond.notify_one();</span><br><span class="line">  &#125;</span><br><span class="line">  bool empty() const</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lk(mut);</span><br><span class="line">    return data_queue.empty();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>跟上一个实现对比可以很容易看出区别，使用T&amp;作为参数的两个函数使用value&#x3D;std::move(*data_queue.front());代替之前的value&#x3D;std::move(data_queue.front());因为队列中存放的是指针，需要解引用获取值；返回智能指针的两个函数就是简单的将获取到的指针赋值给res然后直接返回res，这个过程不会抛出异常；push函数的改动则是创建智能指针然后将指针放入队列，创建智能指针的代码是在获取锁的代码之前，对比之前持有锁时创建智能指针的做法，这种做法可以提升性能，因为内存的分配一般是比较耗时的操作，这样线程持有锁的时间就减少了，并发程度也就提高了。</p>
+<p>参考书目：《C++Concurrency in Action 2nd Edition》</p>
+<p>参考网站：cppreference.com</p>
 
                 
             </div>
@@ -344,7 +341,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/">https://wxyfq.github.io/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/</a>
+                    <a href="https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%BA%8C%EF%BC%89/">https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%BA%8C%EF%BC%89/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -561,24 +558,24 @@
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%80%EF%BC%89/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="C++多线程学习笔记：线程实参传递">
+                        <img src="/medias/featureimages/2.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（一）">
                         
-                        <span class="card-title">C++多线程学习笔记：线程实参传递</span>
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（一）</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍使用std::thread和std::async时的实参传递规则
+                            介绍一种使用互斥锁实现线程安全的stack的方法
                         
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-09
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
                         </span>
                         <span class="publish-author">
                             
@@ -614,24 +611,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">
+                <a href="/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/7.jpg" class="responsive-img" alt="C++多线程学习笔记：线程间数据共享">
+                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="C++多线程学习笔记：线程实参传递">
                         
-                        <span class="card-title">C++多线程学习笔记：线程间数据共享</span>
+                        <span class="card-title">C++多线程学习笔记：线程实参传递</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍在多线程场景使用互斥量保护共享数据的方法
+                            介绍使用std::thread和std::async时的实参传递规则
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-09
                             </span>
                         <span class="publish-author">
                             

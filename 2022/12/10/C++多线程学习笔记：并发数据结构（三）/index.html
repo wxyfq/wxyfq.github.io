@@ -1,0 +1,931 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="C++多线程">
+    <meta name="description" content="好记性不如烂笔头">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+    <title>C++多线程学习笔记：并发数据结构（三） | wenxy的博客</title>
+    <link rel="icon" type="image/png" href="/me.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+
+    <script src="/libs/jquery/jquery.min.js"></script>
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+
+
+<body>
+    <header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                    <img src="/medias/logo.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">wenxy的博客</span>
+                </a>
+            </div>
+            
+
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a>
+<ul class="right nav-menu">
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/" class="waves-effect waves-light">
+      
+      <i class="fas fa-home" style="zoom: 0.6;"></i>
+      
+      <span>首页</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/tags" class="waves-effect waves-light">
+      
+      <i class="fas fa-tags" style="zoom: 0.6;"></i>
+      
+      <span>标签</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/categories" class="waves-effect waves-light">
+      
+      <i class="fas fa-bookmark" style="zoom: 0.6;"></i>
+      
+      <span>分类</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/archives" class="waves-effect waves-light">
+      
+      <i class="fas fa-archive" style="zoom: 0.6;"></i>
+      
+      <span>归档</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/about" class="waves-effect waves-light">
+      
+      <i class="fas fa-user-circle" style="zoom: 0.6;"></i>
+      
+      <span>关于</span>
+    </a>
+    
+  </li>
+  
+  <li>
+    <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+      <i id="searchIcon" class="fas fa-search" title="搜索" style="zoom: 0.85;"></i>
+    </a>
+  </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">wenxy的博客</div>
+        <div class="logo-desc">
+            
+            好记性不如烂笔头
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li class="m-nav-item">
+	  
+		<a href="/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-home"></i>
+			
+			首页
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/tags" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-tags"></i>
+			
+			标签
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/categories" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-bookmark"></i>
+			
+			分类
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/archives" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-archive"></i>
+			
+			归档
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/about" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-user-circle"></i>
+			
+			关于
+		</a>
+          
+        </li>
+        
+        
+    </ul>
+</div>
+
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/11.jpg')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">C++多线程学习笔记：并发数据结构（三）</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<main class="container content">
+
+    
+    <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/C/">
+                                <span class="chip bg-color">C++</span>
+                            </a>
+                        
+                            <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                <span class="chip bg-color">多线程</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                C++多线程
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2022-12-10
+                </div>
+                
+
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
+                    2022-12-11
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
+                    3.4k
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                    14 分
+                </div>
+                
+
+                
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+
+        
+
+        
+        <!-- 代码块折行 -->
+        <style type="text/css">
+            code[class*="language-"], pre[class*="language-"] { white-space: pre-wrap !important; }
+        </style>
+        
+
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <p>使用一个锁保护数据结构保证每次只有一个线程可以访问数据结构，这种做法虽然保证了线程安全，但是确是以完全的串行化作为代价的，所有访问操作都需要排队抢占锁，宏观上看似做到了并发，但是微观上还是串行访问。但其实作为一个队列来讲，当一个线程在向队列的一端写入数据时，可以有另外的线程在队列的另一端读取数据，只要保证同一时刻写入和读取的数据不是同一个就可以。我们可以使用两个锁分别保护头指针和尾指针的访问，这样从头部读取数据和从尾部放入数据的操作就可以同时进行了，这对于提高并发性能是有帮助的。为了实现这种更细粒度的锁，我们需要对数据结构有完全的掌控，所以相较于使用标准库作为底层实现，完全自己实现一个队列数据结构是一个更好的选择。作为开始，先来实现一个单线程的队列，比较简单的方式是使用链表，为了能够更加轻松的管理内存，我们使用智能指针负责链表数据的管理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">template &lt;typename T&gt;</span><br><span class="line">class queue&#123;</span><br><span class="line"> private:</span><br><span class="line">  struct node&#123;</span><br><span class="line">    T data;</span><br><span class="line">    std::unique_ptr&lt;node&gt; next;</span><br><span class="line">    node(T _data):data(std::move(_data))&#123; </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">  std::unique_ptr&lt;node&gt; head;</span><br><span class="line">  node* tail;</span><br><span class="line"> public:</span><br><span class="line">  queue():tail(nullptr)&#123;</span><br><span class="line">  &#125;</span><br><span class="line">  queue(const queue&amp;)=delete;</span><br><span class="line">  queue&amp; operator=(const queue&amp;)=delete;</span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()&#123;</span><br><span class="line">    if(!head)&#123;</span><br><span class="line">      return std::shared_ptr&lt;T&gt;();</span><br><span class="line">    &#125;</span><br><span class="line">    const std::shared_ptr&lt;T&gt; res(</span><br><span class="line">        std::make_shared&lt;T&gt;(std::move(head-&gt;data)));</span><br><span class="line">    const std::unique_ptr&lt;node&gt; old_head = std::move(head);</span><br><span class="line">    head = std::move(head-&gt;next);</span><br><span class="line">    if(!head)</span><br><span class="line">      tail= nullptr;</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  void push(T value)&#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; p(new node(std::move(value)));</span><br><span class="line">    const node* new_tail = p.get();</span><br><span class="line">    if(tail)&#123;</span><br><span class="line">      tail-&gt;next = std::move(p);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">      head = std::move(p);</span><br><span class="line">    &#125;</span><br><span class="line">    tail = new_tail;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码在单线程环境中可以正常运行，但是如果在此基础上通过添加细粒度的锁使其能够适应多线程环境则会遇到一些问题。首先函数操作的数据项有两个：head和tail，所以需要两个互斥量分别进行保护。我们先来分析push函数，函数可能修改head和tail的数据，所以需要同时锁定两个互斥量。这没有什么太大的问题。更加棘手的是push()和pop()都修改了next字段，push()修改的是head-&gt;next，pop修改的是tail-&gt;next，当队列中只有一个数据项的时候，head&#x3D;&#x3D;tail，他们的next字段自然指向了同一个对象。如果想要判断head和tail是否相等，那就需要同时锁定两个互斥量，这样依赖，无论是push还是pop都要同时锁定两个互斥量，相对于使用一个锁的方式，这种更细粒度的锁并不能带来任何并发性能的提升。</p>
+<p>为了解决上面描述的问题，可以提前分配一个空的数据项以保证队列中至少都有一个空的数据项可以将对head和tail的访问分割开来。对于空队列，head和tail同时指向这个空的数据项而不是指向nullptr。而且空队列的时候pop()函数也不会访问head-&gt;next，所以不用考虑同时加锁的问题。对于非空队列，当最少有一个有用的数据项时，其实队列中是有两个项目的，此时head指向有用的数据项，而tail则指向空的数据项，这就保证了只要队列里有数据，head和tail永远都不可能相等，问题解决，修改后的实现如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">template&lt;typename T&gt;</span><br><span class="line">class queue</span><br><span class="line">&#123;</span><br><span class="line"> private:</span><br><span class="line">  struct node &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; data;</span><br><span class="line">    std::unique_ptr&lt;node&gt; next;</span><br><span class="line">  &#125;;</span><br><span class="line">  std::unique_ptr&lt;node&gt; head;</span><br><span class="line">  node* tail;</span><br><span class="line"> public:</span><br><span class="line">  queue():</span><br><span class="line">      head(new node),tail(head.get())</span><br><span class="line">  &#123;&#125;</span><br><span class="line">  queue(const queue&amp; other)=delete;</span><br><span class="line">  queue&amp; operator=(const queue&amp; other)=delete;</span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    if(head.get()==tail)</span><br><span class="line">    &#123;</span><br><span class="line">      return std::shared_ptr&lt;T&gt;();</span><br><span class="line">    &#125;</span><br><span class="line">    std::shared_ptr&lt;T&gt; const res(head-&gt;data);</span><br><span class="line">    std::unique_ptr&lt;node&gt; old_head=std::move(head);</span><br><span class="line">    head=std::move(old_head-&gt;next);</span><br><span class="line">    return res; </span><br><span class="line">    &#125;</span><br><span class="line">  void push(T new_value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; new_data(</span><br><span class="line">        std::make_shared&lt;T&gt;(std::move(new_value)));</span><br><span class="line">    std::unique_ptr&lt;node&gt; p(new node); </span><br><span class="line">    tail-&gt;data=new_data;</span><br><span class="line">    const node* new_tail=p.get();</span><br><span class="line">    tail-&gt;next=std::move(p);</span><br><span class="line">    tail=new_tail;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>跟之前的实现相比，新的node结构体使用智能指针管理数据。queue在构造时使用一个空的node初始化head，tail的值通过head.get()获取的指针值初始化。这样就得到了一个至少存在一个空数据项的队列。try_pop()函数的不再判断head是否为空，而是判断head和tail是否相等，因为新的实现下，head永远不可能为空；由于node使用智能指针管理数据，所以try_pop()可以直接使用获取到的指针初始化res，不需要再构建一个新的T类型的实例了。构建实例的操作被放在了push()函数中，使用new_value创建的共享指针随后被赋给tail的data字段，新创建的不含数据的node p则成为了新的空数据项，也是新的tail。</p>
+<p>这些改进有什么用呢？首先push()操作现在只需要访问tail了；其次try_pop()虽然需要访问head和tail，但是对tail的访问仅仅是用于跟head比较，所以只需要持有tail的锁很短的时间，最大的改进就是空数据项的引入保证了try_pop()和push()永远不可能操作同一个对象，所以也就不需要保护整个数据结构的锁了，我们就可以使用更细粒度的锁来分别保护head和tail了。</p>
+<p>接下来的工作就是考虑在哪里加锁，整体的原则就是尽可能缩短持有锁的时间。push()函数中需要tail锁保护对tail的所有操作，所以将锁放在tail-&gt;data&#x3D;new data;这行代码的上面就可以了。try_pop()需要持有head锁保护对head的所有操作，也就是从函数开始到最后的return语句之前；在这期间需要短暂获取tail锁，也就是比较head和tail是否相等的操作期间。只需要读取tail的值的时候持有tail锁就可以了，所以可以将获取tail值的操作封装成一个函数，然后在函数中使用锁，这样当函数返回时，锁就释放了：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">template&lt;typename T&gt;</span><br><span class="line">class threadsafe_queue</span><br><span class="line">&#123;</span><br><span class="line"> private:</span><br><span class="line">  struct node &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; data;</span><br><span class="line">    std::unique_ptr&lt;node&gt; next;</span><br><span class="line">  &#125;;</span><br><span class="line">  std::mutex head_mutex;</span><br><span class="line">  std::unique_ptr&lt;node&gt; head;</span><br><span class="line">  std::mutex tail_mutex;</span><br><span class="line">  node* tail;</span><br><span class="line">  node* get_tail()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; tail_lock(tail_mutex);</span><br><span class="line">    return tail;</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; pop_head()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">    if(head.get()==get_tail())</span><br><span class="line">    &#123;</span><br><span class="line">      return nullptr;</span><br><span class="line">    &#125;</span><br><span class="line">    std::unique_ptr&lt;node&gt; old_head=std::move(head);</span><br><span class="line">    head=std::move(old_head-&gt;next);</span><br><span class="line">    return old_head;</span><br><span class="line">  &#125;</span><br><span class="line"> public:</span><br><span class="line">  threadsafe_queue():</span><br><span class="line">      head(new node),tail(head.get())</span><br><span class="line">  &#123;&#125;</span><br><span class="line">  threadsafe_queue(const threadsafe_queue&amp; other)=delete;</span><br><span class="line">  threadsafe_queue&amp; operator=(const threadsafe_queue&amp; other)=delete;</span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; old_head=pop_head();</span><br><span class="line">    return old_head?old_head-&gt;data:std::shared_ptr&lt;T&gt;();</span><br><span class="line">  &#125;</span><br><span class="line">  void push(T new_value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; new_data(</span><br><span class="line">        std::make_shared&lt;T&gt;(std::move(new_value)));</span><br><span class="line">    std::unique_ptr&lt;node&gt; p(new node);</span><br><span class="line">    node* const new_tail=p.get();</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; tail_lock(tail_mutex);</span><br><span class="line">    tail-&gt;data=new_data;</span><br><span class="line">    tail-&gt;next=std::move(p);</span><br><span class="line">    tail=new_tail;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>比较有意思的是try_pop()函数中tail_mutex锁的作用，它的存在不仅仅是用于保护对tail的读取，对于防止从head读取数据时发生数据竞争也是必要的。如果没有这个锁，那么try_pop()和push()操作就是完全并行的了，所以它们各自函数中的操作顺序就无法保证了。虽然每个成员函数都持有一个互斥量的锁，但是他们锁定的是不同的互斥量，相互之间并没有同步，所以发生数据竞争的潜在可能性是存在的，毕竟队列中所有的数据都来自push()的写入。tail_mutex的加入解决了这个问题，由于这个互斥量是push()和try_pop()同时使用的，所以它可以保证get_tail()要么发生在push()修改tail之前(此时get_tail()读取的是旧tail的数据)，要么发生在push()修改tail之后(此时get_tail()读取的是新tail的数据)，而不会发生在push()修改tail期间。</p>
+<p>另外需要注意的是对tail_mutex的锁定必须在持有head_mutex锁的前提下进行，在未锁定head_mutex时读取到的tail数据没有任何参考价值，看下面的代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">std::unique_ptr&lt;node&gt; pop_head()</span><br><span class="line">&#123;</span><br><span class="line">  const node* old_tail=get_tail();</span><br><span class="line">  std::lock_guard&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">  if(head.get()==old_tail)</span><br><span class="line">  &#123;</span><br><span class="line">    return nullptr;</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; old_head=std::move(head);</span><br><span class="line">  head=std::move(old_head-&gt;next);</span><br><span class="line">  return old_head;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在get_tail()调用后，可能会开始执行其他的函数调用，push()，try_pop()都有可能,所以当函数获取head_mutex的锁之后，head和tail可能都不是函数最开始时候的值了。现在的head位置甚至可能在old_tail之后，而old_tail可能已经不是队列的一部分了，这就会导致head.get()&#x3D;&#x3D;old_tail的比较返回false，那么接下来更新head的操作就很致命了，如果现在队列已经空了（head&#x3D;&#x3D;tail），这些操作将会破坏数据结构。而上面正确的实现方式保证了读取tail值后head的值不会改变，head的位置永远不可能在old_tail之后，也就保证了判断条件不会失效。</p>
+<p>现在我们回头整体看一下threadsafe_queue的实现，push()函数虽然有耗时的内存分配的操作，但是是在获取锁之前进行的，虽然一次只有一个线程可以持有锁对tail进行修改，但是这些修改操作都是简单的指针赋值操作，所以每个线程持有锁的时间是很短的；try_pop()虽然也持有tail的锁，但是持有时间很短，而且耗时的回收内存操作(old_head占用内存的释放)是在释放锁之后进行的，所以push和try_pop()的大部分操作是可以并行进行的。</p>
+<p>现在我们已经有一个支持细粒度锁的线程安全的队列数据结构了，接下来我们将条件变量添加进去。对push()的修改只需要在函数最后加上notify_one()的调用即可。但是我们还需要考虑一件事，如果我们只是简单的加上一句调用的代码，那么锁将在notify_one()调用才释放，存在这么一种可能，等待线程在锁释放之前就被唤醒了，但是所还没释放，所以等待线程需要等锁释放；相反如果锁在notify_one()调用前就释放了，那么当等待线程被唤醒时就可以直接获取锁。这可能会带来细微的性能提升，修改也很简单，只需要使用一个花括号把加锁的部分包裹住就好了。</p>
+<p>我们看一下完整的实现代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;mutex&gt;</span><br><span class="line"></span><br><span class="line">template&lt;typename T&gt;</span><br><span class="line">class threadsafe_queue</span><br><span class="line">&#123;</span><br><span class="line"> private:</span><br><span class="line">  struct node &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; data;</span><br><span class="line">    std::unique_ptr&lt;node&gt; next;</span><br><span class="line">  &#125;;</span><br><span class="line">  std::mutex head_mutex;</span><br><span class="line">  std::unique_ptr&lt;node&gt; head;</span><br><span class="line">  std::mutex tail_mutex;</span><br><span class="line">  node* tail;</span><br><span class="line">  std::condition_variable data_cond;</span><br><span class="line"> private:</span><br><span class="line">  node* get_tail()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; tail_lock(tail_mutex);</span><br><span class="line">    return tail;</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; pop_head()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; old_head=std::move(head);</span><br><span class="line">    head=std::move(old_head-&gt;next);</span><br><span class="line">    return old_head;</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_lock&lt;std::mutex&gt; wait_for_data()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">    data_cond.wait(head_lock,[&amp;]&#123;return head.get()!=get_tail();&#125;);</span><br><span class="line">    return std::move(head_lock);</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; wait_pop_head()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; head_lock(wait_for_data());</span><br><span class="line">    return pop_head();</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; wait_pop_head(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_lock&lt;std::mutex&gt; head_lock(wait_for_data());</span><br><span class="line">    value=std::move(*head-&gt;data);</span><br><span class="line">    return pop_head();</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; try_pop_head()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">    if(head.get()==get_tail())</span><br><span class="line">    &#123;</span><br><span class="line">      return std::unique_ptr&lt;node&gt;();</span><br><span class="line">    &#125;</span><br><span class="line">    return pop_head();</span><br><span class="line">  &#125;</span><br><span class="line">  std::unique_ptr&lt;node&gt; try_pop_head(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">    if(head.get()==get_tail())</span><br><span class="line">    &#123;</span><br><span class="line">      return std::unique_ptr&lt;node&gt;();</span><br><span class="line">    &#125;</span><br><span class="line">    value=std::move(*head-&gt;data);</span><br><span class="line">    return pop_head();</span><br><span class="line">  &#125;</span><br><span class="line"> public:</span><br><span class="line">  threadsafe_queue():</span><br><span class="line">      head(new node),tail(head.get())</span><br><span class="line">  &#123;&#125;</span><br><span class="line">  threadsafe_queue(const threadsafe_queue&amp; other)=delete;</span><br><span class="line">  threadsafe_queue&amp; operator=(const threadsafe_queue&amp; other)=delete;</span><br><span class="line"></span><br><span class="line">  void push(T new_value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::shared_ptr&lt;T&gt; new_data(</span><br><span class="line">        std::make_shared&lt;T&gt;(std::move(new_value)));</span><br><span class="line">    std::unique_ptr&lt;node&gt; p(new node);</span><br><span class="line">    &#123;</span><br><span class="line">      std::lock_guard&lt;std::mutex&gt; tail_lock(tail_mutex);</span><br><span class="line">      tail-&gt;data=new_data;</span><br><span class="line">      node* const new_tail=p.get();</span><br><span class="line">      tail-&gt;next=std::move(p);</span><br><span class="line">    &#125;</span><br><span class="line">    data_cond.notify_one();</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; wait_and_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; const old_head=wait_pop_head();</span><br><span class="line">    return old_head-&gt;data;</span><br><span class="line">  &#125;</span><br><span class="line">  void wait_and_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; const old_head=wait_pop_head(value);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  std::shared_ptr&lt;T&gt; try_pop()</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; old_head=try_pop_head();</span><br><span class="line">    return old_head?old_head-&gt;data:std::shared_ptr&lt;T&gt;();</span><br><span class="line">  &#125;</span><br><span class="line">  bool try_pop(T&amp; value)</span><br><span class="line">  &#123;</span><br><span class="line">    std::unique_ptr&lt;node&gt; const old_head=try_pop_head(value);</span><br><span class="line">    return old_head;</span><br><span class="line">  &#125;</span><br><span class="line">  bool empty()</span><br><span class="line">  &#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; head_lock(head_mutex);</span><br><span class="line">    return (head.get()==get_tail());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>wait_and_pop()调用wait_pop_head()获取返回值，wait_pop_head()通过调用wait_for_data()等待条件变量并且通过移动语义获得线程唤醒后head锁的所有权。对于返回智能指针的重载函数，直接返回pop_head()的执行结果，pop_head()会返回指向queue的head的指针并将head从queue中移除。需要注意的是针对使用T&amp;类型参数的重载，需要先对value进行赋值，再调用pop_head()，因为对value的赋值使用的是类型T的赋值调用运算符，有可能会抛出异常，再pop_head()之前调用可以防止数据因异常丢失。</p>
+<p>参考书目：《C++Concurrency in Action 2nd Edition》</p>
+<p>参考网站：cppreference.com</p>
+
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="/about" rel="external nofollow noreferrer">wenxy</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%89%EF%BC%89/">https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%89%EF%BC%89/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="/about" target="_blank">wenxy</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
+      document.addEventListener("copy", function (e) {
+        let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
+        M.toast({html: toastHTML})
+      });
+
+      function navToReprintStatement() {
+        $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
+      }
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/C/">
+                                    <span class="chip bg-color">C++</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                                    <span class="chip bg-color">多线程</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">你的赏识是我前进的动力</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="/medias/reward/alipay.jpeg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="/medias/reward/wechat.JPG" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
+            <div class="card">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%89%EF%BC%89/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/11.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（三）">
+                        
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（三）</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            介绍应用细粒度锁的并发queue的实现方法
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
+                    </a>
+                    
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%80%EF%BC%89/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/2.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（一）">
+                        
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（一）</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            介绍一种使用互斥锁实现线程安全的stack的方法
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
+                    </a>
+                    
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+
+<!-- 代码块复制 -->
+
+
+<!-- 代码块收缩 -->
+
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+    <div class="container row center-align" style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2019-2022</span>
+            
+            <span id="year">2019</span>
+            <a href="/about" target="_blank">wenxy</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+            &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                class="white-color">44.2k</span>&nbsp;字
+            
+            
+            
+            
+            
+            
+            <span id="busuanzi_container_site_pv">
+                |&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="busuanzi_value_site_pv"
+                    class="white-color"></span>&nbsp;次
+            </span>
+            
+            
+            <span id="busuanzi_container_site_uv">
+                |&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="busuanzi_value_site_uv"
+                    class="white-color"></span>&nbsp;人
+            </span>
+            
+            <br>
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+
+
+    <a href="mailto:919601977@qq.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=919601977" class="tooltipped" target="_blank" data-tooltip="QQ联系我: 919601977" data-position="top" data-delay="50">
+        <i class="fab fa-qq"></i>
+    </a>
+
+
+
+
+
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="/libs/materialize/materialize.min.js"></script>
+    <script src="/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="/libs/aos/aos.js"></script>
+    <script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="/js/matery.js"></script>
+
+    <!-- Baidu Analytics -->
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+    
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+    
+
+	
+    
+
+    
+
+    
+
+    
+    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+</body>
+
+</html>

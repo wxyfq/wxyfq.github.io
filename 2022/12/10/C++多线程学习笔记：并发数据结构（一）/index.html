@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>C++多线程学习笔记：线程同步 | wenxy的博客</title>
+    <title>C++多线程学习笔记：并发数据结构（一） | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/10.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/2.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">C++多线程学习笔记：线程同步</h1>
+                    <h1 class="description center-align post-title">C++多线程学习笔记：并发数据结构（一）</h1>
                 </div>
             </div>
         </div>
@@ -259,21 +259,21 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-08
+                    2022-12-10
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-09
+                    2022-12-10
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2.2k
+                    2.1k
                 </div>
                 
 
@@ -305,19 +305,57 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>如果线程A需要等待线程B的某个操作完成才能继续执行，应该怎样编写代码？最简单直接的办法，设置一个标志位，线程A通过一个while循环不断去检查这个标志位的值，而线程B在完成某些操作后将标志位置位，所以在A的下一个循环中就可以读取到被置位的标志位，从而继续接下来的工作，当然标志位需要被一个互斥量保护起来。我们可能会写出下面这样的代码：</p>
-<p><code>bool flag;</code><br><code>std::mutex m</code><br><code>void do_some_task()&#123;</code><br>  <code>...;//线程B完成某些耗时操作；</code><br>  <code>std::lock_guard&lt;std::mutex&gt; lg(m);</code><br>  <code>flag = true;</code><br><code>&#125;</code><br><code>void wait_for_flag()&#123;</code><br>  <code>std::unique_lock&lt;std::mutex&gt; ul(m);</code><br>  <code>while(!flag)&#123;//线程A在此不断检查标志位</code><br>    <code>lk.unlock();</code><br>    <code>lk.lock();</code><br>  <code>&#125;</code><br>  <code>do_something_after_waiting();</code><br><code>&#125;</code></p>
-<p>这就是所谓的忙等待，它有一个很明显的缺点：线程A一直在消耗cpu时间片来查询flag状态，这会浪费掉珍贵的cpu执行时间，并且每次的查询过程中都会持有锁，这也就意味着与此同时其他想要请求锁的线程就需要等待。想象一下一堆线程等待同一个flag状态的场景吧，大量的cpu执行时间片被消耗在检查标志位上，被等待的线程获取到的执行时间片就会减少，导致需要花更长的时间才能执行完前置工作，好不容易flag置位的条件满足了，还要跟一堆检查标志位的等待线程抢占锁，成功获取锁后才能将flag成功置位，这边成功置位了，一堆等待线程又要排队抢占锁……</p>
-<p>一种优化的方式是让等待线程在两次查询之间sleep一段时间，在sleep期间线程是阻塞状态，不会消耗cpu执行时间，其他线程也可以获取锁，好像解决了问题。但是sleep多久合适呢？时间太短，上述两个问题依旧会存在，时间太长，可能等待线程刚sleep，flag就被置位了，那只能等下次被唤醒是才能检查标志位，这就造成了响应不及时。</p>
-<p>C++标准库提供的条件变量可以解决这些烦恼，一个条件变量可以跟一个事件或其他条件变量绑定，一个或多个线程可以等待这个条件变量，当一个条件变量被满足时，可以通知一个或多个线程进行响应。C++标准库提供了两种条件变量：std::condition_variable和std::condition_variable_any,在头文件<condition_variable>声明。条件变量需要跟互斥量一起使用来提供同步。前者只能跟std::mutex配合使用，后者则宽泛得多，可以跟任何满足互斥量最基本特性的对象配合使用，相应的也会消耗更多的资源，所以除非是明确需要特定的灵活特性，一般使用std::condition_variable就足够了，代码示例如下：</p>
-<p><code>std::mutex mut;</code><br><code>std::queue&lt;data_chunk&gt; data_queue;</code><br><code>std::condition_variable data_cond;</code><br><code>void data_preparation_thread()//在线程A中执行</code><br><code>&#123;</code><br>    <code>while(more_data_to_prepare())</code><br>    <code>&#123;</code><br>        <code>data_chunk const data=prepare_data();</code><br>        <code>&#123;</code><br>            <code>std::lock_guard&lt;std::mutex&gt; lk(mut);</code><br>            <code>data_queue.push(data);</code><br>        <code>&#125;</code><br>        <code>data_cond.notify_one();</code><br>        <code>&#125;</code><br><code>&#125;</code></p>
-<p><code>void data_processing_thread()//在线程B中执行</code><br><code>&#123;</code><br>    <code>while(true)</code><br>    <code>&#123;</code><br>        <code>std::unique_lock&lt;std::mutex&gt; lk(mut);</code><br>        <code>data_cond.wait(</code><br>            <code>lk,[]&#123;return !data_queue.empty();&#125;);</code><br>        <code>data_chunk data=data_queue.front();</code><br>        <code>data_queue.pop();</code><br>        <code>lk.unlock();</code><br>        <code>process(data);</code><br>                <code>if(is_last_chunk(data))</code><br>                <code>break;</code><br>    <code>&#125;</code><br><code>&#125;</code></p>
-<p>线程A将数据放入队列后，使用条件变量对象调用notify_one()通知线程B。线程B中使用std::unique_lock&lt;&gt;锁定mut，然后使用条件变量调用wait(),wait()函数的第一个参数是std::unique_lock&lt;&gt;对象，第二个参数则是传入一个lambda表达式作为判断条件。</p>
-<p>wait()函数对参数中的条件进行判断。如果条件没有满足，则释放锁并阻塞当前线程，当notify_one()函数被调用时，线程从阻塞状态被唤醒，重新请求锁并且再次对条件进行判断，此时如果条件满足，函数返回，锁不释放，如果条件依旧不满足，则释放锁并阻塞线程等待下一次唤醒。因为当条件未满足时，等待线程需要释放锁，之后再重新加锁，所以需要使用std::unique_lock&lt;&gt;而不是用std::lock_guard&lt;&gt;。后者会在等待线程阻塞时持有锁，这样工作线程就无法获取锁，自然也就无法向队列中添加数据，并且唤醒等待线程了。</p>
-<p>wait()函数的第二个参数是一个判断条件，接受一切可调用对象作为输入，在wait()函数的执行过程中，作为判断条件的函数（或其他可调用对象）可能会被多次执行，wait()函数确保每次执行都是获取锁的状态，并且一旦条件满足，函数立即返回。有时等待线程在未被通知时也会请求锁并且检查条件，这种情况被称为假醒，假醒的次数跟库的实现方式有关，所以如果判断条件中有一些附加操作，需要做好这些操作被多次执行的准备。</p>
-<p>多个线程等待同一个条件变量时，对条件变量调用notify_one()会唤醒一个等待线程，但是并不能确定是唤醒哪一个，甚至不能保证是否有线程在等待通知，有可能所有线程都在执行各自的任务，没有等待该条件变量。还有一种情景是多个线程需要被同时唤醒，这时可以使用notify_all()，这个函数可以唤醒所有阻塞在wait()的线程对条件进行检查。</p>
-<p>使用条件变量进行线程同步通常适用于重复等待某一事件，等待线程通常会使用一个无限循环等待同一个条件的反复触发，通知信号也会被重复发送。那么对于那些只发生一次的同步事件，使用这种方式会有什么问题吗？我们需要一个互斥量，如果我们使用wait(lk)这样的写法，如果被等待的线程在等待线程执行wait()函数之前就下发了通知，那么等待线程将会永远阻塞在wait()函数那里，而且也无法应对假醒的场景。为了避免这种问题，我们在wait()的第二个参数里写入了判断条件，这样wait()会先判断条件是否满足再决定是否阻塞线程，但是有些时候等待线程可能没办法知道被等待线程怎样才算满足条件，要知道等待线程之所以使用条件变量，就是因为它很难直接去判断被等待的任务是否满足条件。一种改进方案是使用atomic的flag，被等待的线程执行完任务后修改flag值，等待线程在一个while循环中不停检查flag，这种方案不需要互斥量，也不用担心等待线程wait之前被等待任务就下发通知，也不用担心假醒，唯一的缺点就是等待线程一直在消耗硬件资源，因为它不停的在轮询查看flag状态而不是阻塞在那里，就像我们在文章开头提到的那样。将上述两者结合就是将wait的判断条件设置为对flag的判断。但是整个流程会变成这样：被等待的线程任务执行完了，然后通知等待线程可以开始你的工作了，等待线程被唤醒后并不是立刻开始工作，而是要先判断flag值再决定要不要执行接下来的任务，工作是完成了，但是给人的感觉很别扭，用户最初的想法可能只是在线程间传递一个同步信号。更好的方式是使用future和promise结合，等待线程通过future的wait()函数被阻塞(不消耗执行资源)，被等待的线程执行完后对promise执行set_value().对于简单的同步信号来讲，两者的类模板参数都设置为void就可以了，具体的使用方式我们在future的介绍文章中已经详细介绍过，此处不再赘述。</p>
-<p>参考书目：《Effective.Modern.C++》、《C++Concurrency in Action 2nd Edition》</p>
+                <p>在多线程程序中，如果某一些数据需要支持多个线程的并发读写，我们需要使用一些手段来同步线程间的读写操作。比如我们可以使用互斥量配合锁来完成数据同步，我们可以使用标准库容器存储共享数据。当线程需要读写数据的时候，先请求锁，然后对数据进行读写，读写完成后再释放锁。为了防止遗漏解锁操作，我们使用std::lock_guard&lt;&gt;作为协助，为了不用每次读写操作都重复书写std::lock_guard代码，我们将获取锁的操作和读写操作封装成一个函数，为了方便复用，我们将标准库容器封装进一个类中，将我们的读写函数变成类的成员函数，于是我们就得到了一个简单的支持并发操作的数据结构。</p>
+<p>当然设计一个支持高并发访问甚至部分并行访问的数据结构并不是这么简单，需要设计者根据使用场景考虑很多问题，你需要哪些强制性的准则来约束使用者的行为？当一个线程在对数据结构进行某一项操作时，来自于其他线程的哪些操作是安全的？你需要考虑怎样尽最大可能减少必要的串行访问并且最大化并行访问。例如多个线程只是从从数据结构中读取数据的时候，这些操作就可以被允许完全并行，但是如果有线程想要修改数据结构，这个操作与其他操作就需要是串行的，只有修改数据的操作完成后其他操作才可以开始。标准库的共享锁std::shared_mutex&lt;&gt;就是这种机制，并行操作访问数据时使用std::shared_mutex&lt;&gt;获取共享锁，互斥（串行）操作访问数据时使用std::lock_guard&lt;&gt;或std::unique_lock&lt;&gt;获取独占锁。</p>
+<p>《C++Concurrency in Action 2nd Edition》一书中为我们提供了两种设计并发数据结构的方法，一种是基于锁的方式，使用互斥量和锁以确保某一时刻只有一个线程访问数据结构；另外一种是使用原子操作的无锁设计。基于锁的方式是比较简单的，也是本章介绍的设计方式。</p>
+<p>我们先看一个基于锁的线程安全的stack的实现，代码来自《C++Concurrency in Action 2nd Edition》：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">class empty_stack:std::exception&#123;</span><br><span class="line">  const char *what() const noexcept override &#123;</span><br><span class="line">    return &quot;Stack is empty&quot;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line">template&lt;typename T&gt;</span><br><span class="line">class threadsafe_stack&#123;</span><br><span class="line"> private:</span><br><span class="line">  std::stack&lt;T&gt; data;</span><br><span class="line">  mutable std::mutex m;</span><br><span class="line"> public:</span><br><span class="line">  threadsafe_stack()=default;</span><br><span class="line">  threadsafe_stack(const threadsafe_stack&amp; other)&#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lg(other.m);</span><br><span class="line">    data=other.data;</span><br><span class="line">  &#125;</span><br><span class="line">  threadsafe_stack&amp; operator=(const threadsafe_stack&amp;)=delete;</span><br><span class="line">  void push(T value)&#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lg(m);</span><br><span class="line">    data.push(std::move(value));</span><br><span class="line">  &#125;</span><br><span class="line">  void pop(T&amp; value)&#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lg(m);</span><br><span class="line">    if(data.empty())throw empty_stack();</span><br><span class="line">    value=std::move(data.top());</span><br><span class="line">    data.pop();</span><br><span class="line">  &#125;</span><br><span class="line">  std::shared_ptr&lt;T&gt; pop()&#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lg(m);</span><br><span class="line">    if(data.empty())throw empty_stack();</span><br><span class="line">    const std::shared_ptr&lt;T&gt; res(std::make_shared&lt;T&gt;(std::move(data.top())));</span><br><span class="line">    data.pop();</span><br><span class="line">    return res;</span><br><span class="line">  &#125;</span><br><span class="line">  bool empty() const&#123;</span><br><span class="line">    std::lock_guard&lt;std::mutex&gt; lg(m);</span><br><span class="line">    return data.empty();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到每个成员函数都使用锁提供互斥访问，保证了每次只有一个线程能够访问数据结构。接口的设计也与std::stack&lt;&gt;不一样，先来看一下从std::stack&lt;&gt;读取数据的代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">stack&lt;int&gt; s;</span><br><span class="line">if(!s.empty())&#123;</span><br><span class="line">	const int value = s.top();</span><br><span class="line">	s.pop();</span><br><span class="line">	do_something(value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先我们要知道所有标准库的容器都不是线程安全的。如果我们设计的threadsafe_stack也采用跟std::stack&lt;&gt;相同的接口，那么我们只能保证empty(),top(),pop()这三个接口函数是线程安全的，从threadsafe_stack读取数据的代码也会跟上述代码相同，这样做会导致多线程访问数据时出现竞态条件，因为两个相邻函数执行的间隙其他线程可以抢占锁执行自己的函数。例如第一个线程判断栈不为空，此时第二个线程开始执行将栈中仅剩的数据拿出，然后第一个线程再继续执行栈不为空条件下的代码，显然是不对的。</p>
+<p>假设两个线程同时执行上述操作，s中有足够的数据，我们使用一个表格来模拟一种可能的函数调用顺序：</p>
+<table>
+<thead>
+<tr>
+<th align="center">Thread A</th>
+<th align="center">Thread B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">if(!s.empty())</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">if(!s.empty())</td>
+</tr>
+<tr>
+<td align="center">const int value &#x3D; s.top();</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">const int value &#x3D; s.top();</td>
+</tr>
+<tr>
+<td align="center">s.pop();</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">do_something(value);</td>
+<td align="center">s.pop();</td>
+</tr>
+<tr>
+<td align="center"></td>
+<td align="center">do_something(value);</td>
+</tr>
+</tbody></table>
+<p>线程A和线程B是两个执行相同操作的线程，正常情况下应该是各自拿到一个数据进行相应的操作，但是两个线程如果按照表格上的调用顺序执行，栈顶的数据会同时被线程A和B访问到，栈顶的第二个数据还未被访问就被弹出，这显然不是想要的结果。所以在threadsafe_stack的接口设计中将top()和pop()封装到同一个接口函数中。还有一点不一样的是，相较于stack的pop()直接返回值的操作，threadsafe_stack的pop函数选择返回一个指向数据的智能指针，另外一个重载接受一个引用作为参数，将值赋给引用绑定的对象。之所以这样设计是考虑到将top()和pop()封装成一个函数，意味着函数返回时，数据已经从栈中删除了，返回的数据会被用来初始化调用点的一个临时变量，此时如果拷贝构造函数因为内存不足抛出异常，临时变量没有创建成功，而栈中的数据也被删除，那数据就丢失了。这种情况在系统负载特别高而栈中存放的数据类型占用空间特别大时（例如stack&lt;vector<string>&gt;）很容易发生。标准库的stack保证pop()不抛出异常，所以不用担心数据丢失的情况。解决的方式有两种，一种是我们提前创建好变量，然后将变量的引用作为参数传给pop()，在数据弹出栈前先将数据赋值给引用绑定的变量，这样即便复制过程中抛出异常，那么数据还在栈中；另外一种是返回一个指向数据的智能指针，因为指针的拷贝是不会抛出异常的，如果指针创建过程中发生了异常，数据还在栈中，指针一旦创建成功，就一定可以传递成功。使用智能指针将内存管理交给标准库，可以避免内存泄露，而且标准库控制内存分配方案而不是使用new和delete会有性能上的优势，因为每次检出数据时都用new创建指针会造成很大的性能消耗。</p>
+<p>threadsafe_stack使用锁实现了多线程对数据结构的互斥访问，但是所有线程抢占同一个锁的事实造成了潜在的性能影响，因为当一个线程在等待锁的过程当中是阻塞的，所有的后续任务都会因为阻塞时间而延后。另外threadsafe_stack没有提供等待数据被添加进栈的方法，这就导致如果一个线程在等待栈中的数据，而栈是空的，等待线程就只能不停的调用empty()进行判断或者调用pop()然后处理异常，等待线程这种不断的轮询会消耗CPU的执行时间片。或者用户自己写条件变量的代码，但是如果这都要用户自己写，那还要我们这个数据结构做什么呢？所以下一步我们就要想办法将条件变量应用到我们的数据结构中。下一章我们将介绍一种使用锁和条件变量实现线程安全的队列数据结构的实现方法。</p>
+<p>参考书目：《C++Concurrency in Action 2nd Edition》</p>
+<p>参考网站：cppreference.com</p>
 
                 
             </div>
@@ -344,7 +382,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/">https://wxyfq.github.io/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/</a>
+                    <a href="https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%80%EF%BC%89/">https://wxyfq.github.io/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%80%EF%BC%89/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -561,24 +599,24 @@
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/09/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%AE%9E%E5%8F%82%E4%BC%A0%E9%80%92/">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%89%EF%BC%89/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/19.jpg" class="responsive-img" alt="C++多线程学习笔记：线程实参传递">
+                        <img src="/medias/featureimages/11.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（三）">
                         
-                        <span class="card-title">C++多线程学习笔记：线程实参传递</span>
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（三）</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍使用std::thread和std::async时的实参传递规则
+                            介绍应用细粒度锁的并发queue的实现方法
                         
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-09
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
                         </span>
                         <span class="publish-author">
                             
@@ -614,24 +652,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%BA%8C%EF%BC%89/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/7.jpg" class="responsive-img" alt="C++多线程学习笔记：线程间数据共享">
+                        <img src="/medias/featureimages/6.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（二）">
                         
-                        <span class="card-title">C++多线程学习笔记：线程间数据共享</span>
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（二）</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍在多线程场景使用互斥量保护共享数据的方法
+                            介绍一种线程安全的queue的实现方法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
                             </span>
                         <span class="publish-author">
                             

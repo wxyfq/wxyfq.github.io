@@ -266,7 +266,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-06
+                    2022-12-10
                 </div>
                 
 
@@ -307,7 +307,8 @@
             <div id="articleContent">
                 <p>通过std::thread类创建的线程，用户拥有最大的自由度，同时也需要承担相应的风险，我们先来看看使用std::thread创建线程后我们需要面临什么。</p>
 <p>首先，通过非默认构造函数成功创建出线程对象后，我们必须保证在线程对象离开作用域被销毁之前对其调用join()或detach(),否则会造成程序终止。以join()为例，我们必须保证在任何情况下线程对象在销毁前都能调用join()函数，包括异常处理。这需要特别的细心以及不小的工作量，同时可能产生大量重复的代码。幸好C++的RAII机制可以减轻我们的负担，RAII是Resource Acquisition Is Initialization的缩写，即“资源获取即初始化”，是C++的一项技术，它将资源的获取放在类的构造函数中，资源的释放放在类的析构函数中，这样，资源的获取和释放就与类对象的生命周期绑定了，这样做可以有效的避免内存泄漏。我们可以将线程放入一个类中，然后将join放在类的析构函数中，这样只要离开了类实例的作用域，当类实例销毁时就会调用join()。一个简单的线程包裹类的实现如下所示：</p>
-<p><code>class thread_guard&#123;</code><br>  <code>thread t;</code><br> <code>public:</code><br>  <code>explicit thread_guard(thread _t):t(std::move(_t))&#123;</code><br>    <code>if(!t.joinable())</code><br>      <code>throw std::logic_error(&quot;No thread&quot;);</code><br>  <code>&#125;</code><br>  <code>thread_guard(const thread_guard&amp;)=delete;</code><br>  <code>thread_guard&amp; operator=(const thread_guard&amp;)=delete;</code><br>  <code>~thread_guard()&#123;</code><br>    <code>t.join();</code><br>  <code>&#125;</code><br><code>&#125;;</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">class thread_guard&#123;</span><br><span class="line">  thread t;</span><br><span class="line"> public:</span><br><span class="line">  explicit thread_guard(thread _t):t(std::move(_t))&#123;</span><br><span class="line">    if(!t.joinable())</span><br><span class="line">      throw std::logic_error(&quot;No thread&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">  thread_guard(const thread_guard&amp;)=delete;</span><br><span class="line">  thread_guard&amp; operator=(const thread_guard&amp;)=delete;</span><br><span class="line">  ~thread_guard()&#123;</span><br><span class="line">    t.join();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
 <p>我们先来看不使用包裹类的时候我们应该怎样写：</p>
 <p><code>int func()&#123;</code><br>  <code>throw logic_error(&quot;error&quot;);</code><br><code>&#125;</code><br><code>int main()&#123;</code><br>  <code>std::thread t(print_once);</code><br>  <code>try&#123;</code><br>    <code>func();</code><br>    <code>t.join();</code><br>  <code>&#125;catch (exception &amp;e)&#123;</code><br>    <code>cout&lt;&lt;e.what()&lt;&lt;endl;</code><br>    <code>t.join();</code><br>    <code>return -1;</code><br>  <code>&#125;</code><br>  <code>return 0;</code><br><code>&#125;</code></p>
 <p>我们用func()函数模拟异常，可以看到t.join()出现在了两处地方，如果func()不只会抛出一个异常，或者有多个类似func()这样会抛出异常的函数，我们就需要在每个异常处理的代码块中调用t.join()，一不小心漏掉一个就会导致程序的异常退出，而这种错误往往不是那么容易发现，因为测试的时候可能无法模拟所有异常的场景。而使用thread_guard后，代码就会变得很简单：</p>
@@ -707,7 +708,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">37.5k</span>&nbsp;字
+                class="white-color">44.2k</span>&nbsp;字
             
             
             
