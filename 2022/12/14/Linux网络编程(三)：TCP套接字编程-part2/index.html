@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="隐式共享">
+    <meta name="keywords" content="Linux网络编程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Qt的隐式共享 | wenxy的博客</title>
+    <title>Linux网络编程(三)：TCP套接字编程-part2 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/10.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/5.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Qt的隐式共享</h1>
+                    <h1 class="description center-align post-title">Linux网络编程(三)：TCP套接字编程-part2</h1>
                 </div>
             </div>
         </div>
@@ -230,8 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/Qt/">
-                                <span class="chip bg-color">Qt</span>
+                            <a href="/tags/Linux/">
+                                <span class="chip bg-color">Linux</span>
+                            </a>
+                        
+                            <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                <span class="chip bg-color">网络编程</span>
                             </a>
                         
                     </div>
@@ -242,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/Qt/" class="post-category">
-                                Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                Linux网络编程
                             </a>
                         
                     </div>
@@ -255,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-06
+                    2022-12-14
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-07
+                    2022-12-15
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    409
+                    1.9k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    1 分
+                    7 分
                 </div>
                 
 
@@ -301,14 +305,38 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>QT中的C++类使用隐式共享来最大化资源的利用率并减少拷贝。使用隐式共享的类实例在被当作参数进行传递的时候兼顾了安全和性能，因为只有指向数据的指针被传递了。只有当数据被改写的时候才会被整体拷贝，也就是copy-on-write。</p>
-<p>共享类由一个指向共享数据块的指针构成；数据块中包含了数据和一个引用计数。</p>
-<p>当一个共享实例被创建后，它的引用计数被设置为1，只要一个对象引用了共享数据，引用计数就增加1，反之如果有实例解除引用，引用计数就减1.当引用计数归零时，共享数据被删除。</p>
-<p>隐式共享对象赋值都是使用的浅拷贝，也就是只有指针被复制。</p>
-<p>隐式共享一般来说对程序员时透明的，但是使用QT的容器迭代器时，需要引起注意，隐式共享可能带来一下和标准库不一样的行为。所以当容器上有迭代器在操作时，应该避免拷贝该容器。</p>
-<p>多线程情况下隐式共享也能发挥作用。</p>
-<p>可以使用QSharedData和QSharedDataPointer类实现自己的隐式共享类。</p>
-<p>当引用计数大于1并且一个对象要被修改时，它就被从共享块中分离出来。共享数据在被修改之前就被从共享块中分离出来。有一个特例就是在QT的容器迭代器时。</p>
+                <p>上一章我们使用socket函数和connect函数写了一个简单的连接服务器并发送数据的小程序，本章我们尝试使用bind，listen和accept这三个函数写一个服务端程序，用于接收来自客户端的数据，然后打印到控制台。</p>
+<p>先来看一下bind函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int bind(int sockfd,const struct sockaddr *myaddr,socklen_t addrlen);//成功返回0，出错返回-1</span><br></pre></td></tr></table></figure>
+
+<p>bind函数把一个本地协议地址赋予一个套接字。对于网际协议，协议地址是32位的IPv4地址或128位的IPv6地址与16位TCP或UDP端口号的组合。</p>
+<p>函数第一个参数代表套接字描述符，第二个参数是一个通用套接字地址结构的指针，第三个参数是该地址结构的长度。对于TCP，调用bind函数可以指定端口号或地址，也可两者都指定，也可以两者都不指定。</p>
+<p>服务器启动时一般会绑定一个众所周知的端口，例如web服务器的80端口，ftp服务器的21端口。如果不调用bind函数，那么在调用connect或listen函数时，内核会为响应的套接字选择一个临时的端口，对于客户端程序来说，让内核选择临时端口是很常规的行为，但是对于服务器来说确实很罕见的。</p>
+<p>进程也可以把一个特定的IP地址绑定在套接字上，这个IP地址必须属于其所在主机的网络接口之一。对于客户端来说，为套接字绑定一个IP地址就为在该套接字上发送的IP数据报指派了源IP地址；对于服务器来说，就限定该套接字只能接收目的地地址为这个IP地址的客户端的连接。TCP客户端通常不绑定IP地址，让内核根据其所有的外出网络接口选择源IP地址；TCP服务器如果不绑定IP地址，内核就将客户发送的SYN的目的IP地址作为服务器的源IP地址。</p>
+<p>如果指定端口号为0，那么内核在bind被调用时选择一个临时端口号。但是如果指定IP地址为通配地址，内核将等到套接字已连接（TCP）或已在套接字上发送数据报（UDP）时才选择一个本地IP地址。</p>
+<p>IPv4的通配地址使用INADDR_ANY指定，其值一般为0，可以这样使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">struct sockaddr_in addr;</span><br><span class="line">addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br></pre></td></tr></table></figure>
+
+<p>上述代码直接将0赋给了sin_addr结构体中的s_addr字段，因为其类型是一个32位的无符号整型。</p>
+<p>IPv6的地址存放在一个结构体中，所以使用一个系统预分配的in6addr_any变量为其赋值：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">struct sockaddr_in6 addr;</span><br><span class="line">addr.sin6_addr = in6addr_any;</span><br></pre></td></tr></table></figure>
+
+<p>TCP服务器调用bind函数绑定过地址和端口后，接下来会调用调用listen函数。当socket函数创建一个套接字时，它被假设为一个主动套接字，也就是说，它是一个将被用于connect发起连接的客户端套接字。listen函数把一个未连接的套接字转换成一个被动套接字，指示内核应接受指向该套接字的连接请求，这个套接字也称为监听套接字。调用listen后，套接字状态会从CLOSED转换为LISTEN。listen函数签名如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int listen(int socketfd,int backlog);</span><br></pre></td></tr></table></figure>
+
+<p>参数backlog用于指定内核应该为相应套接字排队的最大连接个数。内核为任何一个给定的监听套接字维护两个队列：未完成连接队列和已完成连接队列。当服务端TCP收到SYN分节后，TCP在未完成连接队列中创建一个新项目，然后发送ACK给客户端，TCP状态由LISTEN转换成SYN_RCVD，该项会一直保留在未完成队列中直到三路握手完成或者超时；服务器TCP收到来自客户端TCP的ACK分节后，TCP状态由SYN_RCVD转换为ESTABLISHED，三路握手完成，该连接会从未完成连接队列转移到已完成连接队列尾部。调用accept函数会从已完成连接队列头部返回一个TCP连接给进程，如果队列为空，那么进程将会阻塞在调用点直到队列中有新的TCP连接。</p>
+<p>backlog指定的是两个队列总和的最大值。可以通过环境变量设置一个值，即使这个值超过了系统支持的最大值，内核也会对其进行截断的。</p>
+<p>accept函数由TCP服务器调用，用于从已完成连接队列头返回下一个已完成连接，如果已完成连接队列为空，那么进程会阻塞在调用点，这里假定套接字默认为阻塞方式。accept的函数签名如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int accept(int sockfd,struct sockaddr *cliaddr,socklen_t *addrlen);</span><br></pre></td></tr></table></figure>
+
+<p>参数sockfd表示监听套接字的描述符，cliaddr和addrlen是值-结果参数，用来返回已连接的对端进程的协议地址和地址长度。accept成功会返回一个由内核生成的套接字描述符，表示与客户端的TCP连接，失败会返回-1.</p>
+<p>accept返回的套接字描述符是一个已连接套接字描述符。一个服务器通常仅仅创建一个监听套接字，内核会为每个由服务器进程接受的客户连接创建一个已连接套接字。至此，我们可以写一个简单的服务器程序，程序监听9000端口，接收客户端连接请求成功创建已连接套接字后在终端中输出客户端地址，然后从套接字中读取信息（阻塞读），读取到信息后再将信息回写到套接字中，代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">int main()&#123;</span><br><span class="line">  int listen_fd,connected_fd;</span><br><span class="line">  socklen_t len;</span><br><span class="line">  char buf[1024]=&#123;&#125;;</span><br><span class="line">  char cli_addr_buf[128];</span><br><span class="line">  std::string ack_msg_prefix = &quot;Server receive msg:&quot;;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9000);</span><br><span class="line">  server_addr.sin_addr.s_addr = INADDR_ANY;</span><br><span class="line">  listen_fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  if(bind(listen_fd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr)))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;bind failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;;</span><br><span class="line">  if(listen(listen_fd,10))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;listen failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  std::cout&lt;&lt;&quot;Connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;std::endl;</span><br><span class="line">  while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">    write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">    memset(buf,0,1024);</span><br><span class="line">    ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码编译运行后使用netcat模拟客户端，调用命令：nc 127.0.0.1 9000连接服务器，这里使用127.0.0.1作为地址是因为服务器程序是在本机上运行的。调用命令后，想控制台输入信息，会得到服务器的回应：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221215185929553.png?token=ABX7WFTW5KT2WQF7QBJ6PT3DTL7FW" alt="image-20221215185929553"></p>
+<p>上面的服务器程序只调用了一次accept函数，也就是只接受一个连接，当连接终止后，服务器程序就退出了，实际开发中，会有一个无限循环，accept每次返回一个已连接套接字描述符，服务器可以选择fork一个子进程或新建一个线程来负责新连接的通讯，也可以选择IO多路复用技术在当前线程处理。</p>
+<p>参考书目：《UNIX网络编程》</p>
 
                 
             </div>
@@ -335,7 +363,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/06/%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB/">https://wxyfq.github.io/2022/12/06/%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB/</a>
+                    <a href="https://wxyfq.github.io/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/">https://wxyfq.github.io/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -373,8 +401,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/Qt/">
-                                    <span class="chip bg-color">Qt</span>
+                                <a href="/tags/Linux/">
+                                    <span class="chip bg-color">Linux</span>
+                                </a>
+                            
+                                <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                    <span class="chip bg-color">网络编程</span>
                                 </a>
                             
                         </div>
@@ -544,46 +576,52 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/12/06/QMainwindow/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/6.jpg" class="responsive-img" alt="QMainWindow">
+                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="Linux网络编程(三)：TCP套接字编程-part2">
                         
-                        <span class="card-title">QMainWindow</span>
+                        <span class="card-title">Linux网络编程(三)：TCP套接字编程-part2</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            
+                            介绍Linux环境下TCP套接字编程方法
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-14
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Qt/" class="post-category">
-                                    Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/Qt/">
-                        <span class="chip bg-color">Qt</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>
@@ -597,31 +635,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/06/%E5%AF%B9%E8%B1%A1%E6%A0%91%E5%92%8C%E6%89%80%E6%9C%89%E6%9D%83/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%9B%9B)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part3/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="对象树和所有权">
+                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="Linux网络编程(三)：TCP套接字编程-part2">
                         
-                        <span class="card-title">对象树和所有权</span>
+                        <span class="card-title">Linux网络编程(三)：TCP套接字编程-part2</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            简要介绍Qt的对象树系统
+                            介绍Linux环境下TCP套接字编程方法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-14
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Qt/" class="post-category">
-                                    Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
@@ -631,8 +669,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/Qt/">
-                        <span class="chip bg-color">Qt</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>

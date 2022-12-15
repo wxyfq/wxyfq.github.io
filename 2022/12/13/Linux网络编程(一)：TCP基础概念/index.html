@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="隐式共享">
+    <meta name="keywords" content="Linux网络编程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Qt的隐式共享 | wenxy的博客</title>
+    <title>Linux网络编程(一)：TCP基础概念 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/10.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/21.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Qt的隐式共享</h1>
+                    <h1 class="description center-align post-title">Linux网络编程(一)：TCP基础概念</h1>
                 </div>
             </div>
         </div>
@@ -230,8 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/Qt/">
-                                <span class="chip bg-color">Qt</span>
+                            <a href="/tags/Linux/">
+                                <span class="chip bg-color">Linux</span>
+                            </a>
+                        
+                            <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                <span class="chip bg-color">网络编程</span>
                             </a>
                         
                     </div>
@@ -242,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/Qt/" class="post-category">
-                                Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                Linux网络编程
                             </a>
                         
                     </div>
@@ -255,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-06
+                    2022-12-13
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-07
+                    2022-12-14
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    409
+                    2.4k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    1 分
+                    8 分
                 </div>
                 
 
@@ -301,14 +305,48 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>QT中的C++类使用隐式共享来最大化资源的利用率并减少拷贝。使用隐式共享的类实例在被当作参数进行传递的时候兼顾了安全和性能，因为只有指向数据的指针被传递了。只有当数据被改写的时候才会被整体拷贝，也就是copy-on-write。</p>
-<p>共享类由一个指向共享数据块的指针构成；数据块中包含了数据和一个引用计数。</p>
-<p>当一个共享实例被创建后，它的引用计数被设置为1，只要一个对象引用了共享数据，引用计数就增加1，反之如果有实例解除引用，引用计数就减1.当引用计数归零时，共享数据被删除。</p>
-<p>隐式共享对象赋值都是使用的浅拷贝，也就是只有指针被复制。</p>
-<p>隐式共享一般来说对程序员时透明的，但是使用QT的容器迭代器时，需要引起注意，隐式共享可能带来一下和标准库不一样的行为。所以当容器上有迭代器在操作时，应该避免拷贝该容器。</p>
-<p>多线程情况下隐式共享也能发挥作用。</p>
-<p>可以使用QSharedData和QSharedDataPointer类实现自己的隐式共享类。</p>
-<p>当引用计数大于1并且一个对象要被修改时，它就被从共享块中分离出来。共享数据在被修改之前就被从共享块中分离出来。有一个特例就是在QT的容器迭代器时。</p>
+                <p>TCP协议：即传输控制协议（Transmission Control Protocol）是一种面向连接的协议，为用户进程提供可靠的全双工字节流，TCP套接字是一种流套接字，TCP关心确认、超时和重传之类的细节。TCP可以使用IPv4和IPv6。</p>
+<p>RTT：round-trip time，端与端之间的往返时间，TCP含有用于动态估算客户和服务器之间RTT的算法。</p>
+<p>分节：TCP传递给IP的数据单元。</p>
+<p>TCP字节序列号：TCP回给每个字节关联一个序列号用于对所发送的数据进行排序。</p>
+<p>MSS：最大分节大小（Maximum segment size），发送SYN的TCP一端使用本字段通知对端它在本连接的每个TCP分节中愿意接受的最大数据量。</p>
+<p>MTU：最大传输单元（Maximum transmission unit)，以太网的MTU是1500字节，当一个IP数据报将从某个接口送出时，如果它的大小超过相应链路的MTU，IPv4和IPv6都将执行分片。</p>
+<p>套接字：TCP每个端点的IP地址和端口号称为一个套接字。</p>
+<p>套接字对：定义一个TCP连接的两个端点的四元组：本地IP地址、本地TCP端口号、外地IP地址、外地TCP端口号。套接字对唯一标识网络上的每个TCP连接。</p>
+<p>三路握手：</p>
+<p>客户端与服务器建立一个TCP连接，需要经历以下几个步骤：</p>
+<ol>
+<li>服务器处于被动打开的状态，也就是可以接收外来连接</li>
+<li>客户端通过调用connect发起主动打开，此时客户端会发送一个同步分节（SYN）给服务器，这个SYN会携带一个序列号j，用于通知服务器连接中发送的数据的初始序列号，SYN本身会占用一个序列号</li>
+<li>服务器收到SYN分节后，发送确认分节（ACK）和自己的SYN分节给客户端，ACK和SYN是一同发送的，所以使用一个分节。ACK中会携带一个序列号j+1，意思是通知客户端本端所期待的下一个序列号，SYN分节中会携带一个新的序列号K，这个序列号是通知客户端本端发送的数据的初始序列号</li>
+<li>客户端收到来自服务端的ACK分节和SYN分节后需要回复客户端一个ACK分节，同时携带序列号K+1，告知服务端本端期待的下一个序列号</li>
+</ol>
+<p>至此一个TCP连接就建立完成了，由于整个过程中需要至少交换三组数据，因此称之为TCP的三路握手或三次握手，TCP三路握手连接示意图如下：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_status.png?token=ABX7WFTX2XGIURUSKJ7FARLDTGVEU" alt="TCP连接图"></p>
+<p>TCP连接终止：</p>
+<p>TCP连接的建立需要交换三个分节，而终止一个连接则通常需要交换四个分节，所以TCP连接的终止又叫四路分手。</p>
+<p>TCP连接的终止需要经历以下几个步骤：</p>
+<ol>
+<li>主动关闭连接的一端的应用程序调用close执行主动关闭。该端的TCP会发送一个FIN分节，表示数据发送完毕</li>
+<li>接收到FIN分节的对端执行被动关闭。接收端会发送ACK给对端确认。FIN的接收也作为一个文件结束符通知给接收端的应用进程。此时主动关闭一端到被动关闭一端的数据流就关闭了</li>
+<li>被动关闭的一端在处理完数据后，应用进程调用close关闭套接字，这会导致它的TCP也发送一个FIN</li>
+<li>接收到这个FIN的原发送端TCP再发送一个确认给对端，此时被动关闭一端到主动关闭一端的数据流也关闭了</li>
+</ol>
+<p>TCP连接终止时的分节也携带序列号，同时一个FIN分节也占用一个字节的序列号。至此TCP双向的数据流都完成关闭，TCP连接终止，TCP终止连接时的数据交换示意图如下：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_disconnect.png?token=ABX7WFXFAAPHXRUOGXB27NDDTBYGQ" alt="TCP连接图-终止"></p>
+<p>TCP连接的终止通常需要交换四组数据，但是步骤2和步骤3的分节合并成一个分节发送的可能性是存在的，而且步骤1的分节也是有可能随数据一起发送的。在步骤2和步骤3之间，主动关闭一端到被动关闭一端的数据流被关闭了，但是相反方向的数据流还未被关闭，这种状态称为班关闭（half-close）。</p>
+<p>上述示意图中展示的FIN分节的发送都是通过close函数的调用发生的，但是在linux系统中，无论程序是怎样终止的，其打开的所有描述符都会被关闭，包括套接字描述符，此时也会导致本端的TCP发送一个FIN。</p>
+<p>TCP状态转换图：</p>
+<p>TCP涉及连接建立和终止的操作可以用状态转换图来说明：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_status.png?token=ABX7WFVZH62GO6BZIYKBW23DTBYNG" alt="TCP状态转换图"></p>
+<p>建立连接时的TCP状态转换：</p>
+<p>TCP初始状态是CLOSED，作为客户端执行主动打开时，发送SYN分节后TCP状态会变为SYN_SENT，接收到来自服务端的ACK和SYN后会发送ACK分节，然后变为ESTABLISHED状态，这种状态表示TCP连接已经建立成功，可以进行数据传输，这也是绝大多数数据传送发生时的状态；作为服务端从CLOSED状态通过调用socket，bind，listen执行被动打开，此时服务器已经准备好接受新连接，服务端的TCP状态为LISTEN，此时如果收到SYN分节并发送ACK分节和自己的SYN分节，会转换成SYN_RCVD状态，在这个状态如果收到客户端发送的ACK分节，则转换为ESTABLISHED状态。</p>
+<p>终止连接时的TCP状态转换：</p>
+<p>如果本端调用close执行主动关闭，TCP发送FIN后会转换为FIN_WAIT_1状态，等到接收到对端发回的ACK分节后转换为FIN_WAIT_2状态，此时TCP连接已经处于半关闭状态状态，本端到对端的数据流已经关闭了，在FIN_WAIT_2状态下收到对端发送的FIN分节并回复ACK分节后TCP状态会转换为TIME_WAIT，在此状态等待最长2MSL的时间后变为CLOSED状态。如果本端是被动关闭的，在收到FIN分节并发送ACK后会从ESTABLISHED转换至CLOSE_WAIT状态，此时对端到本端的数据流已经关闭了，同样TCP连接处于半关闭状态。一段时间后本端发送FIN给对端后状态转换至LAST_ACK，等接收到对端的确认ACK后，状态转换至CLOSED。</p>
+<p>TCP连接在传输数据时一端发送一个数据分组，对端在收到分组后会发送一个ACK回来，发送端如果在指定时间内没有收到ACK应答，会重传分组。所以如果我们只需要传送一个请求分组，使用TCP连接时，需要额外8个数据分组的开销（连接建立时三个，终止时四个，作为对端成功接收数据的ACK应答一个）；如果使用UDP，则只需要两个数据分组，一个用于承载数据，一个用于承载应答。</p>
+<p>TIME_WAIT状态：</p>
+<p>执行主动关闭的一端在发送最后一个ACK确认分节后会进入TIME_WAIT状态并等待最长2MSL时间后变成CLOSED状态。MSL(maximum segment lifetime)标志分节最长生命周期。这个时间一般为30秒到2分钟。所以TIME_WAIT持续时间一般为一分钟到四分钟。TIME_WAIT状态有两个存在的理由：1.可靠地实现TCP全双工连接的终止；2.允许老的重复分解在网络中消逝。对于第一个理由，假设主动关闭的一端最后发送的ACK分节丢失了，那么服务端会重新发送FIN，客户端就需要维持状态等待重新发送的FIN到达，然后再发送ACK，如果客户端不维持状态，那么在收到服务端重新发送的FIN分节后会发送RST作为应答，这个分节会被服务器解释成一个错误。对于第二个理由，如果一条TCP连接关闭后，一条新建立的TCP连接的两端使用了与旧连接相同的地址和端口号，那么新连接称为旧连接的化身。假设旧连接最后发送的数据分节因为超时重传了，但是数据分节的生命周期并没有结束，只是可能在网络中“迷路”了，重传的数据分节到达对端后连接终止，此时如果作为化身的新连接建立，原来的数据分节在新连接建立后到达了，它就会被误认为是属于新连接中的数据。为了防止这一情况的发生，发送端TCP会在TIME_WAIT状态等待2MSL的时间，TCP不会给处于TIME_WAIT状态的连接发起新的化身。由于TIME_WAIT的持续时间是MSL的两倍，这个时间足够让一个方向的数据分节存在MSL后被丢弃，另一个方向上的应答最多存在MSL后被丢弃。TCP通过TIME_WAIT机制保证了一个TCP连接建立时，之前使用同样的地址端口建立的TCP连接上的老的重复分节已经消逝在网络中了。</p>
+<p>参考书目：《UNIX网络编程》、《TCP&#x2F;IP详解 卷1》</p>
 
                 
             </div>
@@ -335,7 +373,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/06/%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB/">https://wxyfq.github.io/2022/12/06/%E9%9A%90%E5%BC%8F%E5%85%B1%E4%BA%AB/</a>
+                    <a href="https://wxyfq.github.io/2022/12/13/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%80)%EF%BC%9ATCP%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/">https://wxyfq.github.io/2022/12/13/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%80)%EF%BC%9ATCP%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -373,8 +411,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/Qt/">
-                                    <span class="chip bg-color">Qt</span>
+                                <a href="/tags/Linux/">
+                                    <span class="chip bg-color">Linux</span>
+                                </a>
+                            
+                                <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                    <span class="chip bg-color">网络编程</span>
                                 </a>
                             
                         </div>
@@ -548,31 +590,31 @@
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/06/QMainwindow/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%8C)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part1/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/6.jpg" class="responsive-img" alt="QMainWindow">
+                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Linux网络编程(二)：TCP套接字编程-part1">
                         
-                        <span class="card-title">QMainWindow</span>
+                        <span class="card-title">Linux网络编程(二)：TCP套接字编程-part1</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            
+                            介绍Linux环境下TCP套接字编程方法
                         
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-14
                         </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Qt/" class="post-category">
-                                    Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
@@ -582,8 +624,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/Qt/">
-                        <span class="chip bg-color">Qt</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>
@@ -597,31 +643,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/06/%E5%AF%B9%E8%B1%A1%E6%A0%91%E5%92%8C%E6%89%80%E6%9C%89%E6%9D%83/">
+                <a href="/2022/12/10/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%B9%B6%E5%8F%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88%E4%B8%89%EF%BC%89/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="对象树和所有权">
+                        <img src="/medias/featureimages/11.jpg" class="responsive-img" alt="C++多线程学习笔记：并发数据结构（三）">
                         
-                        <span class="card-title">对象树和所有权</span>
+                        <span class="card-title">C++多线程学习笔记：并发数据结构（三）</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            简要介绍Qt的对象树系统
+                            介绍应用细粒度锁的并发queue的实现方法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-10
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Qt/" class="post-category">
-                                    Qt
+                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
+                                    C++多线程
                                 </a>
                             
                             
@@ -631,8 +677,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/Qt/">
-                        <span class="chip bg-color">Qt</span>
+                    <a href="/tags/C/">
+                        <span class="chip bg-color">C++</span>
+                    </a>
+                    
+                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
+                        <span class="chip bg-color">多线程</span>
                     </a>
                     
                 </div>
