@@ -266,7 +266,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-14
+                    2022-12-16
                 </div>
                 
 
@@ -322,7 +322,7 @@
 <li>客户端收到来自服务端的ACK分节和SYN分节后需要回复客户端一个ACK分节，同时携带序列号K+1，告知服务端本端期待的下一个序列号</li>
 </ol>
 <p>至此一个TCP连接就建立完成了，由于整个过程中需要至少交换三组数据，因此称之为TCP的三路握手或三次握手，TCP三路握手连接示意图如下：</p>
-<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_status.png?token=ABX7WFTX2XGIURUSKJ7FARLDTGVEU" alt="TCP连接图"></p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_connect.png" alt="TCP_connect"></p>
 <p>TCP连接终止：</p>
 <p>TCP连接的建立需要交换三个分节，而终止一个连接则通常需要交换四个分节，所以TCP连接的终止又叫四路分手。</p>
 <p>TCP连接的终止需要经历以下几个步骤：</p>
@@ -333,12 +333,12 @@
 <li>接收到这个FIN的原发送端TCP再发送一个确认给对端，此时被动关闭一端到主动关闭一端的数据流也关闭了</li>
 </ol>
 <p>TCP连接终止时的分节也携带序列号，同时一个FIN分节也占用一个字节的序列号。至此TCP双向的数据流都完成关闭，TCP连接终止，TCP终止连接时的数据交换示意图如下：</p>
-<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_disconnect.png?token=ABX7WFXFAAPHXRUOGXB27NDDTBYGQ" alt="TCP连接图-终止"></p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_disconnect.png" alt="TCP_disconnect"></p>
 <p>TCP连接的终止通常需要交换四组数据，但是步骤2和步骤3的分节合并成一个分节发送的可能性是存在的，而且步骤1的分节也是有可能随数据一起发送的。在步骤2和步骤3之间，主动关闭一端到被动关闭一端的数据流被关闭了，但是相反方向的数据流还未被关闭，这种状态称为班关闭（half-close）。</p>
 <p>上述示意图中展示的FIN分节的发送都是通过close函数的调用发生的，但是在linux系统中，无论程序是怎样终止的，其打开的所有描述符都会被关闭，包括套接字描述符，此时也会导致本端的TCP发送一个FIN。</p>
 <p>TCP状态转换图：</p>
 <p>TCP涉及连接建立和终止的操作可以用状态转换图来说明：</p>
-<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_status.png?token=ABX7WFVZH62GO6BZIYKBW23DTBYNG" alt="TCP状态转换图"></p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/TCP_status.png" alt="TCP_status"></p>
 <p>建立连接时的TCP状态转换：</p>
 <p>TCP初始状态是CLOSED，作为客户端执行主动打开时，发送SYN分节后TCP状态会变为SYN_SENT，接收到来自服务端的ACK和SYN后会发送ACK分节，然后变为ESTABLISHED状态，这种状态表示TCP连接已经建立成功，可以进行数据传输，这也是绝大多数数据传送发生时的状态；作为服务端从CLOSED状态通过调用socket，bind，listen执行被动打开，此时服务器已经准备好接受新连接，服务端的TCP状态为LISTEN，此时如果收到SYN分节并发送ACK分节和自己的SYN分节，会转换成SYN_RCVD状态，在这个状态如果收到客户端发送的ACK分节，则转换为ESTABLISHED状态。</p>
 <p>终止连接时的TCP状态转换：</p>
