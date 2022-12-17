@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Linux网络编程(三)：TCP套接字编程-part2 | wenxy的博客</title>
+    <title>wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/5.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/0.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Linux网络编程(三)：TCP套接字编程-part2</h1>
+                    <h1 class="description center-align post-title"></h1>
                 </div>
             </div>
         </div>
@@ -259,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-14
+                    2022-12-17
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-15
+                    2022-12-17
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.9k
+                    1.8k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    7 分
+                    6 分
                 </div>
                 
 
@@ -305,38 +305,37 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>上一章我们使用socket函数和connect函数写了一个简单的连接服务器并发送数据的小程序，本章我们尝试使用bind，listen和accept这三个函数写一个服务端程序，用于接收来自客户端的数据，然后打印到控制台。</p>
-<p>先来看一下bind函数：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int bind(int sockfd,const struct sockaddr *myaddr,socklen_t addrlen);//成功返回0，出错返回-1</span><br></pre></td></tr></table></figure>
+                <p>上一章我们实现了一个服务器小程序，但是那个程序只能处理单个连接，本章我们将对其进行改进，使用fork子线程的方式实现一个并发服务器程序。</p>
+<p>先看一下fork的函数签名：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">pid_t fork(void)</span><br></pre></td></tr></table></figure>
 
-<p>bind函数把一个本地协议地址赋予一个套接字。对于网际协议，协议地址是32位的IPv4地址或128位的IPv6地址与16位TCP或UDP端口号的组合。</p>
-<p>函数第一个参数代表套接字描述符，第二个参数是一个通用套接字地址结构的指针，第三个参数是该地址结构的长度。对于TCP，调用bind函数可以指定端口号或地址，也可两者都指定，也可以两者都不指定。</p>
-<p>服务器启动时一般会绑定一个众所周知的端口，例如web服务器的80端口，ftp服务器的21端口。如果不调用bind函数，那么在调用connect或listen函数时，内核会为响应的套接字选择一个临时的端口，对于客户端程序来说，让内核选择临时端口是很常规的行为，但是对于服务器来说确实很罕见的。</p>
-<p>进程也可以把一个特定的IP地址绑定在套接字上，这个IP地址必须属于其所在主机的网络接口之一。对于客户端来说，为套接字绑定一个IP地址就为在该套接字上发送的IP数据报指派了源IP地址；对于服务器来说，就限定该套接字只能接收目的地地址为这个IP地址的客户端的连接。TCP客户端通常不绑定IP地址，让内核根据其所有的外出网络接口选择源IP地址；TCP服务器如果不绑定IP地址，内核就将客户发送的SYN的目的IP地址作为服务器的源IP地址。</p>
-<p>如果指定端口号为0，那么内核在bind被调用时选择一个临时端口号。但是如果指定IP地址为通配地址，内核将等到套接字已连接（TCP）或已在套接字上发送数据报（UDP）时才选择一个本地IP地址。</p>
-<p>IPv4的通配地址使用INADDR_ANY指定，其值一般为0，可以这样使用：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">struct sockaddr_in addr;</span><br><span class="line">addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br></pre></td></tr></table></figure>
+<p>fork函数用于创建子线程，其特殊之处在于，它被调用一次，但返回两次：在父进程中，fork函数返回子进程的进程ID，在子进程中返回0，出错则返回-1；所以使用fork创建子进程的代码一般会这样写：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">if(pid = fork() &lt; 0)&#123;</span><br><span class="line">	//错误处理</span><br><span class="line">&#125;else if(pid == 0)&#123;</span><br><span class="line">	//子进程接下来的处理</span><br><span class="line">&#125;else&#123;</span><br><span class="line">	//父进程接下来的处理</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>上述代码直接将0赋给了sin_addr结构体中的s_addr字段，因为其类型是一个32位的无符号整型。</p>
-<p>IPv6的地址存放在一个结构体中，所以使用一个系统预分配的in6addr_any变量为其赋值：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">struct sockaddr_in6 addr;</span><br><span class="line">addr.sin6_addr = in6addr_any;</span><br></pre></td></tr></table></figure>
+<p>子进程和父进程继续执行fork调用之后的指令。子进程是父进程的副本，拥有父进程的数据空间、堆和栈的副本。父进程和子进程共享正文段（正文段是指CPU执行的机器指令部分）。</p>
+<p>根据上面介绍的fork的用法，我们的服务端程序可以进行如下修改：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">for(;;)&#123;</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  if((pid=fork())&lt;0) &#123;</span><br><span class="line">    //错误处理</span><br><span class="line">    std::cerr&lt;&lt;&quot;Fail to fork subprocess&quot;&lt;&lt;std::endl;</span><br><span class="line">  &#125;else if(pid==0)&#123;</span><br><span class="line">    //子进程</span><br><span class="line">    close(listen_fd);</span><br><span class="line">    std::cout&lt;&lt;&quot;New connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;&quot;:&quot;</span><br><span class="line">    &lt;&lt;ntohs(client_addr.sin_port)&lt;&lt;std::endl;</span><br><span class="line">    while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">      write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">      memset(buf,0,1024);</span><br><span class="line">      ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    //父进程</span><br><span class="line">    close(connected_fd);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>TCP服务器调用bind函数绑定过地址和端口后，接下来会调用调用listen函数。当socket函数创建一个套接字时，它被假设为一个主动套接字，也就是说，它是一个将被用于connect发起连接的客户端套接字。listen函数把一个未连接的套接字转换成一个被动套接字，指示内核应接受指向该套接字的连接请求，这个套接字也称为监听套接字。调用listen后，套接字状态会从CLOSED转换为LISTEN。listen函数签名如下所示：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int listen(int socketfd,int backlog);</span><br></pre></td></tr></table></figure>
+<p>修改的范围从调用listen函数以后开始，为了节省篇幅，其他代码省略。这样修改以后，每当有新的客户端连接，服务器都会fork一个子进程，而主进程则继续阻塞在accept函数，等待新的连接。子进程不需要调用accept函数等待新连接，所以调用close将监听套接字listen_fd关闭；同理父进程不需要处理已连接套接字，所以调用close关闭connected_fd。</p>
+<p>在父函数调用close关闭connected_fd并不会关闭子进程中对应的TCP连接，同理子进程中关闭listen_fd也不会关闭父进程的监听套接字。每个文件或套接字都有一个引用计数。引用计数在文件表项中维护，表示当前打开着的引用该文件或套接字的描述符的个数。fork返回后，两个描述符在父子进程之间共享，所以各自的引用计数会变成2。close函数的调用只是将描述符的引用计数减1，如果描述符的引用计数在减1以后仍然大于0，那么该描述符就不会被关闭。</p>
+<p>当子线程终止以后，会向父进程发送一个SIGCHLD信号。该信号默认是被忽略的，所以如果没有特殊设置，子进程终止以后，父进程不会做任何相应的处理，这是子进程就会进入僵死状态。设置僵死状态的目的是维护子进程的信息，以便父进程在以后某个时候获取，这些信息包括子进程的进程ID、终止状态以及资源利用信息如CPU时间、内存用量等等。如果父进程一直不处理子进程的僵死状态，那么当父进程退出后，子进程会变成孤儿进程进而被init进程收养，然后init进程会清理这些子进程，清理的方式是调用wait函数。僵死进程会占用内核的空间，所以父进程应该及时清理僵死的子进程，而不要等待父进程退出后交给init进程处理。上文说到子进程终止以后会给父进程发送一个SIGCHLD信号，所以我们可以添加一个信号处理函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">void handler(int sig_num)&#123;</span><br><span class="line">  pid_t pid;</span><br><span class="line">  int stat;</span><br><span class="line">  pid=wait(&amp;stat);</span><br><span class="line">  return;</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line">signal(SIGCHLD,handler);</span><br></pre></td></tr></table></figure>
 
-<p>参数backlog用于指定内核应该为相应套接字排队的最大连接个数。内核为任何一个给定的监听套接字维护两个队列：未完成连接队列和已完成连接队列。当服务端TCP收到SYN分节后，TCP在未完成连接队列中创建一个新项目，然后发送ACK给客户端，TCP状态由LISTEN转换成SYN_RCVD，该项会一直保留在未完成队列中直到三路握手完成或者超时；服务器TCP收到来自客户端TCP的ACK分节后，TCP状态由SYN_RCVD转换为ESTABLISHED，三路握手完成，该连接会从未完成连接队列转移到已完成连接队列尾部。调用accept函数会从已完成连接队列头部返回一个TCP连接给进程，如果队列为空，那么进程将会阻塞在调用点直到队列中有新的TCP连接。</p>
-<p>backlog指定的是两个队列总和的最大值。可以通过环境变量设置一个值，即使这个值超过了系统支持的最大值，内核也会对其进行截断的。</p>
-<p>accept函数由TCP服务器调用，用于从已完成连接队列头返回下一个已完成连接，如果已完成连接队列为空，那么进程会阻塞在调用点，这里假定套接字默认为阻塞方式。accept的函数签名如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int accept(int sockfd,struct sockaddr *cliaddr,socklen_t *addrlen);</span><br></pre></td></tr></table></figure>
+<p>signal()函数为信号SIGCHLD绑定一个处理函数handler，handler由一个int类型的参数，并且没有返回值。当信号发出时，信号的值会被当做参数传给handler函数。在handler函数中调用wait函数可以清除子进程的僵死状态。跟wait函数会处理第一个终止的子进程，另外有一个waitpid函数可以处理指定线程ID的子进程，下面是两个函数的签名：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/wait.h&gt;</span><br><span class="line">pid_t wait(int *statloc);</span><br><span class="line">pid_t waitpid(pid_t pid,int *statloc,int options);</span><br></pre></td></tr></table></figure>
 
-<p>参数sockfd表示监听套接字的描述符，cliaddr和addrlen是值-结果参数，用来返回已连接的对端进程的协议地址和地址长度。accept成功会返回一个由内核生成的套接字描述符，表示与客户端的TCP连接，失败会返回-1.</p>
-<p>accept返回的套接字描述符是一个已连接套接字描述符。一个服务器通常仅仅创建一个监听套接字，内核会为每个由服务器进程接受的客户连接创建一个已连接套接字。至此，我们可以写一个简单的服务器程序，程序监听9000端口，接收客户端连接请求成功创建已连接套接字后在终端中输出客户端地址，然后从套接字中读取信息（阻塞读），读取到信息后再将信息回写到套接字中，代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">int main()&#123;</span><br><span class="line">  int listen_fd,connected_fd;</span><br><span class="line">  socklen_t len;</span><br><span class="line">  char buf[1024]=&#123;&#125;;</span><br><span class="line">  char cli_addr_buf[128];</span><br><span class="line">  std::string ack_msg_prefix = &quot;Server receive msg:&quot;;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9000);</span><br><span class="line">  server_addr.sin_addr.s_addr = INADDR_ANY;</span><br><span class="line">  listen_fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  if(bind(listen_fd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr)))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;bind failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;;</span><br><span class="line">  if(listen(listen_fd,10))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;listen failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  std::cout&lt;&lt;&quot;Connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;std::endl;</span><br><span class="line">  while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">    write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">    memset(buf,0,1024);</span><br><span class="line">    ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>两个函数调用成功会返回进程ID，出错会返回0或-1。statloc是一个值结果参数，用于保存子进程终止状态。options用于设置附加选项，比如WNOHANG告知内核在没有已终止子进程时不要阻塞。wait函数会阻塞直到出现第一个终止的子进程。</p>
+<p>实际应用当中可能会遇到多个子进程同时结束的场景，此时多个SIGCHLD信号同时发送给父进程，而Linux信号一般是不排队的，意思就是信号处理函数在这种情况下只会被调用一次。此时如果在handler中使用wait函数处理子进程，那么就只有一个僵死状态的子进程会被处理，这显然是不符合预期的。那可不可以在一个循环中调用wait函数来处理所有的子进程呢？如果使用这种方式，当所有已终止的子进程都被处理完后，wait函数会阻塞在那里等待下一个僵死的子进程，handler函数将永远不会退出。正确的解决办法是使用waitpid函数，waitpid函数的第一个参数指定了子进程ID，如果设置为-1，函数就会等待第一个终止的子进程，如果没有额外设置，此时waitpid跟wait是等效的，但是waitpid提供了WNOHANG选项，这允许waitpid在没有终止的子进程时不要阻塞，这样就可以在处理完所有僵死状态的子进程后退出信号处理函数了。使用waitpid修改后的信号处理函数如下所示:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">void handler(int sig_num)&#123;</span><br><span class="line">  pid_t pid;</span><br><span class="line">  int stat;</span><br><span class="line">  while((pid=waitpid(-1,&amp;stat,WNOHANG))&gt;0)</span><br><span class="line">    std::cout&lt;&lt;&quot;child:&quot;&lt;&lt;pid&lt;&lt;&quot; terminated&quot;&lt;&lt;std::endl;</span><br><span class="line">  return;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>代码编译运行后使用netcat模拟客户端，调用命令：nc 127.0.0.1 9000连接服务器，这里使用127.0.0.1作为地址是因为服务器程序是在本机上运行的。调用命令后，想控制台输入信息，会得到服务器的回应：</p>
-<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221215185929553.png?token=ABX7WFTW5KT2WQF7QBJ6PT3DTL7FW" alt="image-20221215185929553"></p>
-<p>上面的服务器程序只调用了一次accept函数，也就是只接受一个连接，当连接终止后，服务器程序就退出了，实际开发中，会有一个无限循环，accept每次返回一个已连接套接字描述符，服务器可以选择fork一个子进程或新建一个线程来负责新连接的通讯，也可以选择IO多路复用技术在当前线程处理。</p>
-<p>参考书目：《UNIX网络编程》</p>
+<p>我们使用netcat模拟客户端进行测试，创建两个客户端连接后，使用ps命令查询服务器进程：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221217173130489.png" alt="image-20221217173130489"></p>
+<p>可以看到有两个子进程，我们使用kill命令杀掉其中一个观察输出：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221217173244770.png" alt="image-20221217173244770"></p>
+<p>接下来我们再使用netcat创建一个客户端连接：</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221217173348934.png" alt="image-20221217173348934"></p>
+<p>新连接成功创建，这就是使用waitpid的好处，如果我们用wait函数代替，那么当我们杀死一个子线程触发了信号处理函数后，将再也无法创建新的客户端连接了。</p>
+<p>参考书目：《UNIX网络编程》、《UNIX环境高级编程》</p>
 
                 
             </div>
@@ -363,7 +362,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/">https://wxyfq.github.io/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/</a>
+                    <a href="https://wxyfq.github.io/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%9B%9B)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part3/">https://wxyfq.github.io/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%9B%9B)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part3/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -576,9 +575,10 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%9B%9B)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part3/">
                     <div class="card-image">
@@ -596,9 +596,9 @@
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-17
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-17
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -611,6 +611,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -633,13 +634,13 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%8C)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part1/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Linux网络编程(二)：TCP套接字编程-part1">
+                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="Linux网络编程(三)：TCP套接字编程-part2">
                         
-                        <span class="card-title">Linux网络编程(二)：TCP套接字编程-part1</span>
+                        <span class="card-title">Linux网络编程(三)：TCP套接字编程-part2</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
