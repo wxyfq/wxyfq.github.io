@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="C++多线程">
+    <meta name="keywords" content="Linux网络编程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>C++多线程学习笔记：线程间数据共享 | wenxy的博客</title>
+    <title>Linux网络编程(六)：epoll | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/7.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/18.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">C++多线程学习笔记：线程间数据共享</h1>
+                    <h1 class="description center-align post-title">Linux网络编程(六)：epoll</h1>
                 </div>
             </div>
         </div>
@@ -230,12 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/C/">
-                                <span class="chip bg-color">C++</span>
+                            <a href="/tags/Linux/">
+                                <span class="chip bg-color">Linux</span>
                             </a>
                         
-                            <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                                <span class="chip bg-color">多线程</span>
+                            <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                <span class="chip bg-color">网络编程</span>
                             </a>
                         
                     </div>
@@ -246,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
-                                C++多线程
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                Linux网络编程
                             </a>
                         
                     </div>
@@ -259,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-07
+                    2022-12-29
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-07
+                    2022-12-29
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    3k
+                    2.6k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    11 分
+                    9 分
                 </div>
                 
 
@@ -305,55 +305,95 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p><strong>不变量（invariants）</strong>是指针对一个特定的数据结构永远为真的一种状态。比如“这个变量保存着链表中条目的数量”。当链表被修改时，不变量被打破，例如当插入和删除操作完成之前。<strong>竞态条件（race condition）</strong>是指程序输出的结果依赖于多个线程的执行顺序。我们常说的竞态条件是指会引发错误的情形。C++定义的<strong>数据竞争（data race）</strong>是指对单个对象的并行修改从而引发竞态条件的一种情形。数据竞争会引发未定义的行为。</p>
-<p>竞态条件比较难发现，因为它发生时间的不确定性，通常是转瞬即逝的。但是随着系统运行时间和负荷的增加，竞态条件会更加容易发生。避免发生竞态条件可以通过使用一种保护机制，使得一次只有一个线程修改数据，例如加锁；还可以通过修改数据结构的设计和它的不变量从而使得数据的修改操作可以通过一系列无法分割的操作来实现，每个操作都可以保护不变量，这种方式涉及到无锁编程（lock-free programming）；再有一种方式就是通过事务来实现，就像数据库操作一样。</p>
-<p>最简单也是最直接的加锁方式是使用互斥量std::mutex，对其调用std::lock()实现加锁，调用std::unlock()实现解锁：</p>
-<p><code>std::mutex m;</code><br><code>std::lock(m);</code><br><code>do_something();</code><br><code>std::unlock(m);</code></p>
-<p>这种方式常见的问题是修改数据后没有调用std::unlock()解锁导致其他线程无法获取锁，有时可能是忘记了，有时可能是do_someting()中抛出了异常导致程序提前退出。所以如果使用std::lock()和std::unlock()完成互斥操作需要程序员考虑到各种情况，保证在程序退出的所有路径中都调用了std::unlock()，例如异常处理。</p>
-<p>C++标准库提供了一种std::lock_guard&lt;&gt;类模板，为std::mutex实现了RAII习语，即在构造函数中获取锁，在析构函数中释放锁，将锁的生命周期与std::lock_guard&lt;&gt;对象的生命周期绑定，从而实现了自动解锁。使用std::lock_guard&lt;&gt;获取锁的方式如下：</p>
-<p><code>std::mutex m;</code><br><code>void func()&#123;</code><br>  <code>std::lock_guard&lt;std::mutex&gt; lg(m);</code><br>  <code>//C++17加入了类模板参数自动推断，所以这一行可以简写成</code><br>  <code>//std::lock_guard lg(m);</code><br>  <code>//C++17还引入了lock_guard的加强版scoped_lock</code><br>  <code>//std::scoped_lock lg(m);</code><br>  <code>do_something();</code><br><code>&#125;</code></p>
-<p>上述代码中当lg在函数的最开始获取锁，在函数完成操作并返回时，lg离开作用域，对象销毁的同时释放锁。与传统的手动方式相比，使用std::lock_guard&lt;&gt;显然更省时省力并更加可靠。</p>
-<p>使用mutex保护共享数据看似很安全，但是还是有其他隐患，例如do_something()这个函数具体做了什么事？如果这个函数返回了受保护数据的指针或者引用，那么意味着其它线程就可以在不获取锁的前提下对数据进行操作，从而形成数据竞争。避免这种情况有一个准则：<strong>不要将被保护的数据的指针或引用传递出锁的作用域，不管是直接返回，还是将之存储在外部可见的存储区域，或是将他们传递给用户提供的函数中作为参数。</strong></p>
-<p>即使单个操作是线程安全的，但是当这些操作组合在一起时同样会引发竞态条件，最简单的方式当然是使用互斥量将所有操作保护起来，但是这会大大影响性能。还有一种方式就是优化接口函数，将多个操作组合为一个操作，并用一个mutex进行保护。</p>
-<p>c++标准库还提供了一种比std::lock_guard&lt;&gt;更具灵活性的类：std::unique_lock&lt;&gt;，相比于std::lock_guard&lt;&gt;整个生命周期中都持有对mutex的锁，std::unique_lock&lt;&gt;并不是始终持有mutex的锁。</p>
-<p>std::unique_lock&lt;&gt;的第二个参数可以设置为:</p>
+                <p>epoll是poll的一个变种，支持水平触发和边缘触发，select和poll则只支持水平触发。epoll只存在于linux内核，移植性不如select和poll，但是当需要监视大量处于空闲状态的描述符时（偶尔有少量描述符就绪），性能远远强于前两者。</p>
+<p>epoll提供了三个系统调用：epoll_create()用于创建一个epoll实例，返回一个代表该实例的文件描述符；epoll_ctl用于操作同epoll实例相关联的兴趣列表；epoll_wait返回与epoll实例相关联的就绪列表中的成员。下面我们对这三个api进行详细的介绍。</p>
+<p>epoll和poll的API在使用上的最大不同就是epoll需要创建一个epoll实例，epoll_create()会完成这项任务并返回一个代表epoll实例的文件描述符，这个文件描述符会作为epoll_ctl()和epoll_wait()的第一个参数。需要注意的是，epoll实例实际是在内核空间创建的，epoll_ctl()和epoll_wait()对代表epoll实例的文件描述符的操作也会转化成为对内核空间上的epoll实例的操作。使用这种方式避免了用户空间和内核空间之间的数据交换，解约了用于拷贝数据的CPU时间，所以在处理大量文件描述符时，epoll对比poll可以节省大量的CPU时间从而提升了性能。epoll_create()函数签名如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/epoll.h&gt;</span><br><span class="line">int epoll_create(int size);</span><br><span class="line">int epoll_create1(int flags);</span><br><span class="line">//执行成功返回代表epoll实例的文件描述符，失败则返回-1，相应的errno被设置</span><br></pre></td></tr></table></figure>
+
+<p>可以看到系统提供了一个额外的函数epoll_create1()，两者的区别是，epoll_create()接收一个size参数，这个参数在原始的设计中用于告诉内核一个默认值，这个值代表了调用者期望的该epoll实例需要处理的文件描述符的数量，但是内核依旧可能会根据实际情况选择更大的值。所以在更新的版本中，内核已经不需要这个默认值了，但是为了兼容旧版本内核，新的程序中如果使用了epoll_create()，需要对其设置一个大于0的参数。epoll_create1()舍弃了size，使用一个标志位集合flags作为参数，目前该值只支持了EPOLL_CLOEXEC，用于为epoll实例的文件描述符设置FD_CLOEXEC标志位，该标志位的效果与open()函数的O_CLOEXEC一样，表示当执行程序执行exec函数时，在新开的进程当中关闭该描述符，默认情况下，在新开的进程中原来的父进程的描述符依旧处于打开状态。当epoll_create1()的参数设置为0的时候，效果与epoll_create()一样。epoll_create()和epoll_create1()创建的实例在使用结束后要对其描述符调用close()以通知内核销毁实例并释放资源。</p>
+<p>创建完epoll实例后需要设置兴趣列表，使用epoll_ctl()系统调用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/epoll.h&gt;</span><br><span class="line">int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);</span><br></pre></td></tr></table></figure>
+
+<p>epfd是epoll_create()或epoll_create1()返回的代表epoll实例的文件描述符；op代表操作类型，有三个值：EPOLL_CTL_ADD：将描述符fd注册到epoll实例的兴趣列表中并将event中的事件关联到fd</p>
+<p>EPOLL_CTL_MOD：修改关联到描述符fd的事件</p>
+<p>EPOLL_CTL_DEL：从epoll实例中删除描述符fd</p>
+<p>fd指明哪个文件描述符会被修改；event是一个结构体指针，其指向的值用于存储将要应用于fd的具体的设置。struct epoll_event的结构体定义如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">typedef union epoll_data &#123;</span><br><span class="line">    void        *ptr;</span><br><span class="line">    int          fd;</span><br><span class="line">    uint32_t     u32;</span><br><span class="line">    uint64_t     u64;</span><br><span class="line">&#125; epoll_data_t;</span><br><span class="line"></span><br><span class="line">struct epoll_event &#123;</span><br><span class="line">    uint32_t     events;      /* Epoll events */</span><br><span class="line">    epoll_data_t data;        /* User data variable */</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>stuct epoll_event中的events字段是一个位掩码，指定了描述符fd上感兴趣的事件集合。epoll支持的事件如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="left">位掩码</th>
+<th align="center">作为epoll_ctl()的输入？</th>
+<th align="center">由epoll_wait()返回？</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">EPOLLIN</td>
+<td align="center">*</td>
+<td align="center">*</td>
+<td align="left">可读取非高优先级的数据</td>
+</tr>
+<tr>
+<td align="left">EPOLLPRI</td>
+<td align="center">*</td>
+<td align="center">*</td>
+<td align="left">可读取高优先级数据</td>
+</tr>
+<tr>
+<td align="left">EPOLLRDHUP</td>
+<td align="center">*</td>
+<td align="center">*</td>
+<td align="left">套接字对端关闭</td>
+</tr>
+<tr>
+<td align="left">EPOLLOUT</td>
+<td align="center">*</td>
+<td align="center">*</td>
+<td align="left">普通数据可写</td>
+</tr>
+<tr>
+<td align="left">EPOLLET</td>
+<td align="center">*</td>
+<td align="center"></td>
+<td align="left">采用边缘触发事件通知</td>
+</tr>
+<tr>
+<td align="left">EPOLLONESHOT</td>
+<td align="center">*</td>
+<td align="center"></td>
+<td align="left">在完成事件通知后禁用检查</td>
+</tr>
+<tr>
+<td align="left">EPOLLERR</td>
+<td align="center"></td>
+<td align="center">*</td>
+<td align="left">有错误发生</td>
+</tr>
+<tr>
+<td align="left">EPOLLHUP</td>
+<td align="center"></td>
+<td align="center">*</td>
+<td align="left">出现挂断</td>
+</tr>
+</tbody></table>
+<p>系统调用epoll_wait返回epoll实例中处于就绪状态的文件描述符信息，单个epoll_wait()调用能返回多个就绪文件描述符的信息。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/epoll.h&gt;</span><br><span class="line">int epoll_wait(int epfd, struct epoll_event *events,int maxevents, int timeout);</span><br><span class="line">//调用成功则返回就绪文件描述符的数量，超时返回0，失败返回-1</span><br></pre></td></tr></table></figure>
+
+<p>参数epfd是代表epoll实例的文件描述符；events指向一个结构体数组，用于存储返回的就绪文件描述符的信息，该结构体数组的内存需要调用者负责申请和释放，数组中的元素数量跟maxevents相等，maxevents设置了一个上限，最多maxevents个就绪文件描述符会被epoll_wait返回；timeout用于指定超时时间，单位是毫秒，设置为0时epoll_wait()立即返回，即便没有文件描述符变成就绪状态，设置为-1时epoll_wait()会阻塞直到有文件描述符变成就绪状态。</p>
+<p>使用epoll重写上一章的客户端程序如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;sys/epoll.h&gt;</span><br><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;cstring&gt;</span><br><span class="line">#define MAX_EVENTS 2</span><br><span class="line">using namespace std;</span><br><span class="line">int main() &#123;</span><br><span class="line">    struct sockaddr_in addr;</span><br><span class="line">    struct epoll_event ev,events[MAX_EVENTS];</span><br><span class="line">    string line;</span><br><span class="line">    char buf[1024]=&#123;0&#125;;</span><br><span class="line">    int connect_fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">    addr.sin_family = AF_INET;</span><br><span class="line">    addr.sin_port = htons(9000);</span><br><span class="line">    inet_pton(AF_INET,&quot;10.211.55.2&quot;,&amp;addr.sin_addr);</span><br><span class="line">    if(connect(connect_fd,(struct sockaddr*)&amp;addr,sizeof(addr))&lt;0)&#123;</span><br><span class="line">        std::cout&lt;&lt;&quot;connect failed&quot;&lt;&lt;std::endl;</span><br><span class="line">        return -1;</span><br><span class="line">    &#125;</span><br><span class="line">    //int epoll_fd = epoll_create(1);</span><br><span class="line">    int epoll_fd = epoll_create1(0);</span><br><span class="line">    ev.data.fd = STDIN_FILENO;</span><br><span class="line">    ev.events = EPOLLIN;</span><br><span class="line">    epoll_ctl(epoll_fd,EPOLL_CTL_ADD,STDIN_FILENO,&amp;ev);</span><br><span class="line">    ev.data.fd = connect_fd;</span><br><span class="line">    ev.events = EPOLLIN;</span><br><span class="line">    epoll_ctl(epoll_fd,EPOLL_CTL_ADD,connect_fd,&amp;ev);</span><br><span class="line">    for(;;)&#123;</span><br><span class="line">        int nfds = epoll_wait(epoll_fd,events,MAX_EVENTS,-1);</span><br><span class="line">        for(int i=0;i&lt;nfds;++i)&#123;</span><br><span class="line">            if(events[i].data.fd == STDIN_FILENO)&#123;</span><br><span class="line">                //处理标准输入</span><br><span class="line">                getline(std::cin,line);</span><br><span class="line">                write(connect_fd,line.c_str(),line.length());</span><br><span class="line">            &#125;else if(events[i].data.fd == connect_fd&amp;&amp;events[i].events&amp;EPOLLIN)&#123;</span><br><span class="line">                //处理套接字描述符</span><br><span class="line">                memset(buf,0,1024);</span><br><span class="line">                if(read(connect_fd,buf,1024)==0)&#123;</span><br><span class="line">                    std::cout&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">                    goto close;</span><br><span class="line">                &#125;</span><br><span class="line">                std::cout&lt;&lt;buf&lt;&lt;std::endl;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    close:</span><br><span class="line">    close(epoll_fd);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后介绍一下水平触发和边缘触发。水平触发是指当文件描述符上可以非阻塞的执行IO系统调用，此时认为它已经就绪；边缘触发是指如果文件描述符自上次状态检查以来有了新的IO活动才触发通知。举一个简单的例子，假设有一个管道，在管道写的一端写入10kb数据，在读的一端使用epoll_wait()等待文件描述符读就绪，如果设置了水平触发，当文件描述符可读时，程序从中读取5kb数据后停止读取，然后进行下一次epoll_wait()，那么下一次epoll_wait()返回的就绪列表中，依然会包含该文件描述符，因为管道中还有未读取的数据；如果设置了边缘触发，读取5kb数据后下一次epoll_wait()的就绪列表中将不包含该文件描述符，因为虽然管道中还有未读取的数据，但是从上次检查开始管道中并没有发生新的IO活动（例如新的输入），如果epoll_wait()只检查这一个文件描述符，那么第二次epoll_wait()将会阻塞。</p>
+<p>所以当我们应用水平触发时，我们可以在任意时刻重复检查IO状态，也就没有必要每次文件描述符就绪后尽可能多的执行IO；相反，当采用边缘触发时，只有当IO事件发生时我们才会收到通知，所以就需要在收到一个IO事件后尽可能多的执行IO操作。为了避免在进行尽可能多的IO操作是造成阻塞，所以采用边缘触发时，每个被检查的描述符都应该设置为非阻塞模式，在得到IO事件通知后重复执行IO操作，知道相应的系统调用返回错误码EAGAIN。</p>
+<p>假设我们采用边缘触发通知监视多个文件描述符，其中一个处于就绪态的文件描述符 上有着大量的输入存在(可能是一个不间断的输入流)。如果在检测到该文件描述符处于 就绪态后，我们将尝试通过非阻塞式的读操作将所有的输入都读取，那么此时就会有使其 他的文件描述符处于饥饿状态的风险存在(即，在我们再次检查这些文件描述符是否处于 就绪态并执行 I&#x2F;O 操作前会有很长的一段处理时间)。该问题的一种解决方案是让应用程序 维护一个列表，列表中存放着已经被通知为就绪态的文件描述符。通过一个循环按照如下 方式不断处理。</p>
 <ol>
-<li>std::adopt_lock:表示为一个已经加锁的mutex创建一个lock_guard;</li>
-<li>std::defer_lock:表示表示为一个mutex创建一个lock_guard但是暂时不锁定它;</li>
-<li>std::try_lock:表示为一个mutex创建一个lock_guard并尝试锁定它;</li>
-<li>也可以设置为时间段或者时间点分别表示在时间段内或者某个时间点锁定mutex。</li>
+<li>调用 epoll_wait()监视文件描述符，并将处于就绪态的描述符添加到应用程序维护的 列表中。如果这个文件描述符已经注册到应用程序维护的列表中了，那么这次监视 操作的超时时间应该设为较小的值或者是 0。这样如果没有新的文件描述符成为就 绪态，应用程序就可以迅速进行到下一步，去处理那些已经处于就绪态的文件描述 符了。</li>
+<li>在应用程序维护的列表中，只在那些已经注册为就绪态的文件描述符上进行一定限度 的 I&#x2F;O 操作(可能是以轮转调度(round-robin)方式循环处理，而不是每次 epoll_wait() 调用后都从列表头开始处理)。当相关的非阻塞 I&#x2F;O 系统调用出现 EAGAIN 或 EWOULDBLOCK 错误时，文件描述符就可以从应用程序维护的列表中移除了。</li>
 </ol>
-<p>std::unique_lock&lt;&gt;比std::lock_guard&lt;&gt;的占用稍大并且性能稍弱，因为前者需要维护锁状态，例如需要一个标志位来表示对象当前是否持有锁。在离开作用域时，如果std::unique_lock&lt;&gt;持有锁，则会自动调用std::unlock()释放锁，反之则一定不会调用std::unlock().可以通过owns_lock()函数查询std::unique_lock&lt;&gt;对象是否持有锁。除非有特定用途，std::lock_guard&lt;&gt;是更好的选择。</p>
-<p>一个使用std::unique_lock&lt;&gt;的场景就是延迟加锁，还有就是传递锁的所有权。例如</p>
-<p><code>std::unique_lock&lt;std::mutex&gt; get_lock()</code><br><code>&#123;</code><br>    <code>extern std::mutex some_mutex;</code><br>    <code>std::unique_lock&lt;std::mutex&gt; lk(some_mutex);</code><br>    <code>prepare_data();</code><br>    <code>return lk;</code><br><code>&#125;</code><br><code>void process_data()</code><br><code>&#123;</code><br>    <code>std::unique_lock&lt;std::mutex&gt; lk(get_lock());</code><br>    <code>do_something();</code><br><code>&#125;</code></p>
-<p>这里为什么不能用std::lock_guard&lt;&gt;？很简单，因为离开作用域后随着std::lock_guard&lt;&gt;对象的析构锁就被释放了，如果此时有其他线程对其加锁，那传递过程就失败了。而由于std::lock_guard&lt;&gt;并不一定持有锁，所以锁的所有权就可以通过移动语义在对象间传递。从函数返回对象，移动操作是自动进行的，其他时候需要调用std::move()来实现对象的移动。std::unique_lock&lt;&gt;和std::lock_guard&lt;&gt;的对象都是无法拷贝但是可移动。</p>
-<p>std::unique_lock&lt;&gt;还有一个特性是可以提前解锁，而不必等到其对象离开作用域，这一特性的意义在于当用户明确知道无需再占有锁时，可以及时释放，从而让其他线程可以获取锁。</p>
-<p>要合理控制锁的粒度，尽量不要在进行耗时操作时（如硬盘文件IO操作）持有锁。</p>
-<p>提到锁，一个绕不开的话题就是死锁。引发死锁的原因是线程间的相互等待，不光是互相等待对方释放锁，线程间相互join这种情况也能引发死锁。《C++Concurrency in Action 2nd Edition》中为避免死锁提供了若干建议：</p>
-<ol>
-<li><p>避免嵌套加锁：已经获取一个锁以后，不要再尝试获取锁，如果必须要加多个锁，可以使用std::lock()一次性请求。</p>
-</li>
-<li><p>避免加锁后执行用户提供的代码。本质上跟第一条相同，因为无法判定用户的代码中作了什么操作，如果用户代码中请求了锁，那么就违背了第一条建议。但是在编写泛型代码的时候，这种情况无法避免。</p>
-</li>
-<li><p>以固定顺序请求锁。当必须请求多个锁又无法使用std::lock()一次性请求时，最好的方法就是在每个线程中以一个固定顺序请求它们。这里所说的顺序固定是相对于所有线程，加锁的顺序都是一致的，类似如下函数：</p>
-<p>a.exchange_data_with(b);</p>
-<p>两个实例互换数据，调用方和作为参数的一方实例都需要加锁，就不能单纯的在函数中先lock a再lock b，因为如果当调用主体变了，加锁的顺序也就随之变了，应该保证不论谁是调用方，在函数中的加锁顺序都是a先于b或者相反。</p>
-<p>再比如多线程访问双向链表，每次对当前节点加锁，读取数据，然后再请求下一个节点的锁，成功后释放当前节点的锁。如果不能保证绝对顺序的一致，那么当两个线程分别从链表的头尾进行访问时，在中间的某个点相遇时就会遭遇死锁。此时想要防止死锁可以通过限制链表的访问顺序来实现。</p>
-</li>
-<li><p>为锁引入层级概念。这其实是第三条的一种特例。具体做法是将应用程序进行分层，然后标记每个层次的每个锁，当代码试图请求锁时，如果已经在更低的层级获取到了一个锁，那么本次加锁会失败。以此来保证加锁的顺序一致。</p>
-</li>
-</ol>
-<p>有时我们需要保证在多线程的场景下一个操作只调用一次。像延迟初始化的场景，例如数据库操作，每次操作之前都要确认一下连接是否建立，如果没有就需要创建连接并且这个操作只能进行一次。在没有更好的办法之前，我们可能会使用现有学到的东西写出如下代码：</p>
-<p><code>&#123;</code><br>  <code>std::unique_lock&lt;std::mutex&gt; lk(resource_mutex);</code><br>    <code>if(!connected)</code><br>    <code>&#123;</code><br>        <code>connect_db();</code><br>    <code>&#125;</code><br>    <code>lk.unlock();</code><br><code>do_something();</code><br><code>&#125;</code></p>
-<p>这种写法可能是最下意识的写法了，并且也能达到目的，但是这种写法有一个问题，因为每次请求都要加锁判断是否存在数据库连接，所有的线程会去抢占同一个锁，当有大量的并行的访问请求到达时，会造成线程的排队从而降低性能。为此，C++标准库提供了一种解决方案：std::call_once()，该函数配合std::once_flag对象使用可以保证某个函数只被调用一次。具体用法如下：</p>
-<p><code>std::once_flag flag;</code><br><code>std::call_once(flag,connect_db);</code><br><code>do_something();</code></p>
-<p>使用这种方式，所有的互斥操作就交由标准库执行，使用这种方式比直接使用mutex性能要强，尤其是当像connect_db这样的一次性操作已经执行过时。</p>
-<p>C++11标准后出现了替代std::call_once()的方式，就是使用static声明全局静态变量。C++11以后，标准规定static变量在被首次访问之前已经完成了初始化，并且这种操作是线程安全的。利用这个特性，我们可以很容易写出线程安全的单例模式的代码：</p>
-<p><code>class X；</code><br><code>X&amp; get_instance()&#123;</code><br>  <code>static X x;</code><br>  <code>return x;</code><br><code>&#125;</code></p>
-<p>上述两种机制只是在初始化时保护数据，对数据的修改只是在初始化时进行一次，如果遇到偶尔修改的的数据，该用什么方式呢？有些数据可能很长时间才会被修改一次，如DNS缓存数据，修改这种数据的时候我们需要保证其他线程的读取操作是被阻塞的以防止读到错误的数据。最简单的方式当然还是使用一个mutex，读取和修改操作前先获取锁。但是为了一个偶然的写操作而让所有的读操作去请求锁显然是不合理的，而且会大大影响性能。C++提供了一种读写锁的机制来应对这种场景。它允许多个读操作同时用有锁，但是只允许一个写操作用有锁，并且当写操作拥有锁时，其他读操作无法再获取锁。</p>
-<p>C++14提供了std::shared_timed_mutex,C++17增加了std::shared_mutex，C++11则没有提供读写锁。写锁的获取可以使用std::lock_guard或std::unique_lock，读锁的获取可以使用std::shared_lock；</p>
-<p>标准库还提供了递归锁，普通的mutex多次加锁会导致未定义的行为，但是std::recursive_mutex可以多次上锁，但是当你发现你需要用递归锁的时候，最好是重新审视一下你的设计。</p>
-<p>参考书目：《C++Concurrency in Action 2nd Edition》</p>
+<p>参考书目：《UNIX环境高级编程》、《Linux&#x2F;UNIX系统编程手册》</p>
 
                 
             </div>
@@ -380,7 +420,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/">https://wxyfq.github.io/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%95%B0%E6%8D%AE%E5%85%B1%E4%BA%AB/</a>
+                    <a href="https://wxyfq.github.io/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AD)%EF%BC%9Aepoll/">https://wxyfq.github.io/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AD)%EF%BC%9Aepoll/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -418,12 +458,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/C/">
-                                    <span class="chip bg-color">C++</span>
+                                <a href="/tags/Linux/">
+                                    <span class="chip bg-color">Linux</span>
                                 </a>
                             
-                                <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                                    <span class="chip bg-color">多线程</span>
+                                <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                    <span class="chip bg-color">网络编程</span>
                                 </a>
                             
                         </div>
@@ -593,50 +633,52 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/12/08/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/">
+                <a href="/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AD)%EF%BC%9Aepoll/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/10.jpg" class="responsive-img" alt="C++多线程学习笔记：线程同步">
+                        <img src="/medias/featureimages/18.jpg" class="responsive-img" alt="Linux网络编程(六)：epoll">
                         
-                        <span class="card-title">C++多线程学习笔记：线程同步</span>
+                        <span class="card-title">Linux网络编程(六)：epoll</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍多线程同步的知识
+                            介绍epoll的用法
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-08
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-29
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
-                                    C++多线程
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/C/">
-                        <span class="chip bg-color">C++</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
                     </a>
                     
-                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                        <span class="chip bg-color">多线程</span>
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>
@@ -650,31 +692,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/07/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9Afuture/">
+                <a href="/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%94)%EF%BC%9AIO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：future">
+                        <img src="/medias/featureimages/23.jpg" class="responsive-img" alt="Linux网络编程(五)：IO多路复用">
                         
-                        <span class="card-title">C++多线程学习笔记：future</span>
+                        <span class="card-title">Linux网络编程(五)：IO多路复用</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍与future相关的packed_task、promise、shared future的用法
+                            介绍select、poll
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-07
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-17
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
-                                    C++多线程
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
@@ -684,12 +726,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/C/">
-                        <span class="chip bg-color">C++</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
                     </a>
                     
-                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                        <span class="chip bg-color">多线程</span>
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>

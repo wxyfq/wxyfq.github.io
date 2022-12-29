@@ -266,7 +266,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-17
+                    2022-12-20
                 </div>
                 
 
@@ -331,7 +331,7 @@
 <p>我们再来看poll函数：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;poll.h&gt;</span><br><span class="line">int poll(struct pollfd *fdarray,unsigned long nfds,int timeout);</span><br></pre></td></tr></table></figure>
 
-<p>第一个参数是指向一个结构数据第一个元素的指针。每个数组元素都是一个pollfd结构，用于指定测试某个给定描述符的条件：</p>
+<p>第一个参数是指向一个结构数据第一个元素的指针。每个数组元素都是一个pollfd结构，用于指定测试某个给定描述符的条件，nfds指定数组中元素的个数：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">struct pollfd&#123;</span><br><span class="line">	int fd;</span><br><span class="line">	short events;//fd感兴趣的事件</span><br><span class="line">	short revents;//fd上发生的事件</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>跟select的直结果参数不同，pollfd将输入的时间和返回的时间分别存在两个变量中，events和revents的值如下表所示：</p>
@@ -407,7 +407,7 @@
 </tbody></table>
 <p>timeout的值表示毫秒数，等于0时立即返回，可以设置为常量INFTIM表示永远等待。poll返回就绪描述符的数目，若超时则返回0，出错返回-1。</p>
 <p>使用poll函数实现的客户端代码如下所示：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;thread&gt;</span><br><span class="line">#include &lt;poll.h&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  std::string line;</span><br><span class="line">  struct sockaddr_in addr;</span><br><span class="line">  char buf[1024]=&#123;0&#125;;</span><br><span class="line">  addr.sin_family=AF_INET;</span><br><span class="line">  addr.sin_port= htons(9000);</span><br><span class="line">  inet_pton(AF_INET,&quot;127.0.0.1&quot;,&amp;addr.sin_addr);</span><br><span class="line">  int fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  connect(fd,(const struct sockaddr*)&amp;addr,sizeof(addr));</span><br><span class="line">  struct pollfd client[2];</span><br><span class="line">  client[0].fd = STDIN_FILENO;</span><br><span class="line">  client[0].events = POLLIN;</span><br><span class="line">  client[1].fd = fd;</span><br><span class="line">  client[1].events = POLLIN;</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    poll(client,fd+1,1000);</span><br><span class="line">    if(client[0].revents&amp;POLLIN)&#123;</span><br><span class="line">      //处理标准输入</span><br><span class="line">      getline(std::cin,line);</span><br><span class="line">      write(fd,line.c_str(),line.length());</span><br><span class="line">    &#125;</span><br><span class="line">    if(client[1].revents&amp;POLLIN)&#123;</span><br><span class="line">      //处理套接字描述符</span><br><span class="line">      memset(buf,0,1024);</span><br><span class="line">      if(read(fd,buf,1024)==0)&#123;</span><br><span class="line">        std::cout&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">        return 0;</span><br><span class="line">      &#125;</span><br><span class="line">      std::cout&lt;&lt;buf&lt;&lt;std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;thread&gt;</span><br><span class="line">#include &lt;poll.h&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  std::string line;</span><br><span class="line">  struct sockaddr_in addr;</span><br><span class="line">  char buf[1024]=&#123;0&#125;;</span><br><span class="line">  addr.sin_family=AF_INET;</span><br><span class="line">  addr.sin_port= htons(9000);</span><br><span class="line">  inet_pton(AF_INET,&quot;127.0.0.1&quot;,&amp;addr.sin_addr);</span><br><span class="line">  int fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  connect(fd,(const struct sockaddr*)&amp;addr,sizeof(addr));</span><br><span class="line">  struct pollfd client[2];</span><br><span class="line">  client[0].fd = STDIN_FILENO;</span><br><span class="line">  client[0].events = POLLIN;</span><br><span class="line">  client[1].fd = fd;</span><br><span class="line">  client[1].events = POLLIN;</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    poll(client,2,1000);</span><br><span class="line">    if(client[0].revents&amp;POLLIN)&#123;</span><br><span class="line">      //处理标准输入</span><br><span class="line">      getline(std::cin,line);</span><br><span class="line">      write(fd,line.c_str(),line.length());</span><br><span class="line">    &#125;</span><br><span class="line">    if(client[1].revents&amp;POLLIN)&#123;</span><br><span class="line">      //处理套接字描述符</span><br><span class="line">      memset(buf,0,1024);</span><br><span class="line">      if(read(fd,buf,1024)==0)&#123;</span><br><span class="line">        std::cout&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">        return 0;</span><br><span class="line">      &#125;</span><br><span class="line">      std::cout&lt;&lt;buf&lt;&lt;std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p> select()和 poll()是是可移植的、 长期存在且被广泛使用的。但是当检查大量的文件描述符时，这两个 API 都会遇到一些问题：</p>
 <ol>
@@ -655,30 +655,29 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="far fa-dot-circle"></i>&nbsp;本篇
-            </div>
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%94)%EF%BC%9AIO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/">
+                <a href="/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AD)%EF%BC%9Aepoll/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/23.jpg" class="responsive-img" alt="Linux网络编程(五)：IO多路复用">
+                        <img src="/medias/featureimages/18.jpg" class="responsive-img" alt="Linux网络编程(六)：epoll">
                         
-                        <span class="card-title">Linux网络编程(五)：IO多路复用</span>
+                        <span class="card-title">Linux网络编程(六)：epoll</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍select、poll
+                            介绍epoll的用法
                         
                     </div>
                     <div class="publish-info">
-                            <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-17
-                            </span>
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-29
+                        </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -691,7 +690,6 @@
                         </span>
                     </div>
                 </div>
-
                 
                 <div class="card-action article-tags">
                     
@@ -802,7 +800,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">55.2k</span>&nbsp;字
+                class="white-color">57.8k</span>&nbsp;字
             
             
             
