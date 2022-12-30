@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="Qt,mysql">
+    <meta name="keywords" content="Linux网络编程">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>MacOS系统下QT连接mysql数据库 | wenxy的博客</title>
+    <title>Linux网络编程(七)：套接字选项 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -208,7 +208,7 @@
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">MacOS系统下QT连接mysql数据库</h1>
+                    <h1 class="description center-align post-title">Linux网络编程(七)：套接字选项</h1>
                 </div>
             </div>
         </div>
@@ -230,12 +230,12 @@
                     
                     <div class="article-tag">
                         
-                            <a href="/tags/Qt/">
-                                <span class="chip bg-color">Qt</span>
+                            <a href="/tags/Linux/">
+                                <span class="chip bg-color">Linux</span>
                             </a>
                         
-                            <a href="/tags/mysql/">
-                                <span class="chip bg-color">mysql</span>
+                            <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                <span class="chip bg-color">网络编程</span>
                             </a>
                         
                     </div>
@@ -246,8 +246,8 @@
                     <div class="post-cate">
                         <i class="fas fa-bookmark fa-fw icon-category"></i>
                         
-                            <a href="/categories/Qt/" class="post-category">
-                                Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                Linux网络编程
                             </a>
                         
                     </div>
@@ -259,28 +259,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-12-06
+                    2022-12-29
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-07
+                    2022-12-30
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    1.3k
+                    2.1k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    6 分
+                    7 分
                 </div>
                 
 
@@ -305,75 +305,94 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>MACOS版本：12.3.1</p>
-<p>Qt版本：5.15.2</p>
-<p>1.安装mysql数据库，我的电脑上的安装目录为&#x2F;usr&#x2F;local&#x2F;mysql</p>
-<p>2.准备一个测试程序打印一下当前qt加载的数据库驱动：</p>
-<p>main.cpp</p>
-<p><code>#include &lt;QApplication&gt;</code><br><code>#include &lt;QSqlDatabase&gt;</code><br><code>#include &lt;QDebug&gt;</code><br><code>int main(int argc,char* argv[]) &#123;</code><br>  <code>QApplication app(argc,argv);</code><br>  <code>QStringList drivers = QSqlDatabase::drivers();</code><br>  <code>foreach(QString driver,drivers)</code> 	<br>  <code>qDebug()&lt;&lt;driver;</code><br>  <code>return app.exec();</code><br><code>&#125;</code></p>
-<p>接下来编写CMakeLists.txt</p>
-<p>qt连接数据库需要编译时引入sql组件</p>
-<p><code>cmake_minimum_required(VERSION 3.0)</code><br><code>project(qt_sql_test) s</code><br><code>et(CMAKE_CXX_STANDARD 11)</code><br><code>set(CMAKE_AUTOMOC ON)</code><br><code>set(CMAKE_AUTOUIC ON)</code><br><code>set(CMAKE_AUTORCC ON)</code><br><code>set(CMAKE_PREFIX_PATH /Users/wenxinyuan/Qt/5.15.2/clang_64)</code><br><code>find_package(Qt5 COMPONENTS Core Widgets Sql REQUIRED)</code><br><code>link_libraries(</code><br><code>Qt5::Core</code><br><code>Qt5::Widgets</code><br><code>Qt5::Sql</code><br><code>)</code><br><code>aux_source_directory(./srcs)</code><br><code>add_executable(qt_sql_test $&#123;srcs&#125;)</code></p>
-<p>需要注意的是第9行，如果没有这一行，那么使用cmake构建的时候就会得到类似下面这样的提示：</p>
-<blockquote>
-<p>CMake Error at CMakeLists.txt:10 (find_package):<br>  By not providing “FindQt5.cmake” in CMAKE_MODULE_PATH this project has<br>  asked CMake to find a package configuration file provided by “Qt5”, but<br>  CMake did not find one.</p>
-<p>  Could not find a package configuration file provided by “Qt5” with any of<br>  the following names:</p>
-<p>Qt5Config.cmake<br>qt5-config.cmake</p>
-<p>  Add the installation prefix of “Qt5” to CMAKE_PREFIX_PATH or set “Qt5_DIR”<br>  to a directory containing one of the above files.  If “Qt5” provides a<br>  separate development package or SDK, be sure it has been installed.</p>
-</blockquote>
-<p>所以我们按照提示设置下qt的安装目录，这个安装目录就是bin文件夹所在的目录</p>
-<p>输出的结果如下：</p>
-<p>“QSQLITE”</p>
-<p>“QODBC”</p>
-<p>“QODBC3”</p>
-<p>“QPSQL”</p>
-<p>“QPSQL7”</p>
-<p>以上结果说明当前的qt中没有mysql的驱动，这就需要我们自行编译安装mysql的驱动。</p>
-<p>qt官网中5.15版本的文档提供了编译mysql驱动以及安装插件的方法，链接如下:</p>
-<p><a target="_blank" rel="noopener" href="https://doc.qt.io/qt-5/sql-driver.html#driverwithqt">https://doc.qt.io/qt-5/sql-driver.html#driverwithqt</a></p>
-<p>但是按照官网的方法在我的电脑上没有成功，我也找不到原因，所以我使用另一种方案</p>
-<p>首先进入mysql驱动的源码目录,在我的电脑上，这个目录是</p>
-<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;QT&#x2F;5.15.2&#x2F;Src&#x2F;qtbase&#x2F;src&#x2F;plugins&#x2F;sqldrivers&#x2F;mysql</p>
-<p>这个目录中有一个名称为mysql.pro的文件，打开文件做一下修改：</p>
-<p><code>TARGET = qsqlmysql</code></p>
-<p><code>HEADERS += $$PWD/qsql_mysql_p.h</code><br><code>SOURCES += $$PWD/qsql_mysql.cpp $$PWD/main.cpp</code></p>
-<p><code>#QMAKE_USE += mysql //将原本的这一行注释掉</code><br><code>INCLUDEPATH+=/usr/local/mysql/include //添加mysql的include目录</code><br><code>LIBS+= -L /usr/local/mysql/lib -lmysqlclient //添加mysql的lib目录</code></p>
-<p><code>OTHER_FILES += mysql.json</code></p>
-<p><code>PLUGIN_CLASS_NAME = QMYSQLDriverPlugin</code><br><code>include(../qsqldriverbase.pri)</code></p>
-<p>修改保存后就可以执行qmake进行构建：</p>
-<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;bin&#x2F;qmake  mysql.pro</p>
-<p>由于我没有设置环境变量，所以使用了qmake的完整路径。</p>
-<p>构建过程中没有输出，最后会生成一个新的Makefile文件。直接执行，make进行编译</p>
-<p>编译生成的文件放在下面的目录,注意跟源码目录的差别。</p>
-<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;Src&#x2F;qtbase&#x2F;plugins&#x2F;sqldrivers</p>
-<p>我们直接执行make install进行安装</p>
-<p>编译好的库文件会被安装到目录</p>
-<p>&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers</p>
-<p>中。至此我们已经完成的mysql驱动的编译以及安装。使用文章开头的程序重新检测输出如下：</p>
-<p>“QSQLITE”</p>
-<p>“QMARIADB”</p>
-<p>“QMYSQL”</p>
-<p>“QMYSQL3”</p>
-<p>“QODBC”</p>
-<p>“QODBC3”</p>
-<p>“QPSQL”</p>
-<p>“QPSQL7”</p>
-<p>说明qt已经可以检测到mysql的驱动了。</p>
-<p>接下来我们连接一下本地的数据库进行测试，连接数据库代码如下：</p>
-<p><code>#include &lt;QApplication&gt;</code><br><code>#include &lt;QSqlDatabase&gt;</code><br><code>#include &lt;QDebug&gt;</code></p>
-<p><code>int main(int argc,char* argv[])</code><br><code>&#123;</code><br>    <code>QApplication app(argc,argv);</code><br>    <code>QSqlDatabase db = QSqlDatabase::addDatabase(&quot;QMYSQL&quot;);</code><br>    <code>db.setHostName(&quot;localhost&quot;);</code><br>    <code>db.setDatabaseName(&quot;test1&quot;);</code><br>    <code>db.setUserName(&quot;xinyuan&quot;);</code><br>    <code>db.setPassword(&quot;123456&quot;);</code><br>    <code>bool ret = db.open();</code><br>    <code>qDebug()&lt;&lt;ret;</code><br>    <code>return app.exec();</code><br><code>&#125;</code></p>
-<p>编译后运行输出结果如下：</p>
-<p>QSqlDatabase: QMYSQL driver not loaded QSqlDatabase: available drivers: QSQLITE QMARIADB QMYSQL QMYSQL3 QODBC QODBC3 QPSQL QPSQL7 false</p>
-<p>可以看到虽然qt已经识别到mysql的驱动，但是连接还是失败了。</p>
-<p>为了排查原因，我们设置下环境变量<strong>QT_DEBUG_PLUGINS</strong>&#x3D;1,并重新运行看一下debug信息：</p>
-<p>export QT_DEBUG_PLUGINS&#x3D;1</p>
-<p>运行后输出的信息很多，我们提取最后的有用信息：</p>
-<p>Reason: tried: ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers&#x2F;..&#x2F;..&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;plugins&#x2F;sqldrivers&#x2F;..&#x2F;..&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;sources&#x2F;qtsql&#x2F;build&#x2F;..&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;lib&#x2F;QtCore.framework&#x2F;Versions&#x2F;5&#x2F;Frameworks&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;Users&#x2F;wenxinyuan&#x2F;Qt&#x2F;5.15.2&#x2F;clang_64&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;usr&#x2F;local&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file), ‘&#x2F;usr&#x2F;lib&#x2F;libmysqlclient.21.dylib’ (no such file))</p>
-<p>可以看到无法加载驱动的原因是相关的mysql的库找不到，那解决方案就很简单了，只需要在CMakeLists.txt文件中添加下相关的库目录就行了，在我的环境下，添加如下命令即可：</p>
-<p>link_directories(     </p>
-<p>&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;lib</p>
-<p>​          )</p>
-<p>重新编译运行后，db.open()返回值为true，成功连接上数据库；</p>
+                <p>操作套接字选项可以使用getsocketopt和setsockopt函数，fcntl函数或ioctl函数，我们先介绍可以使用getsocketopt和setsockopt函数操作的套接字选项。函数签名如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int getsockopt(int sockfd,int level,int optname,void *optval,socklen_t *optlen);</span><br><span class="line">int setsockopt(int sockfd,int level,int optname,const void *optval,socklen_t optlen);</span><br></pre></td></tr></table></figure>
+
+<p>参数sockfd必须指向一个打开的套接字描述符，level指定系统中解释选项的代码或为通用套接字代码，或为某个特定于协议的代码（如IPv4、IPv6、TCP或SCTP）。optval是一个指向某个变量的指针，setsockopt从*optval中获取选项待设置的值，getsockopt则把获取的选项当前值存放到*optval中。*optval的大小由最后一个参数指定，它对于setsockopt是一个值参数，对于getsockopt是一个值结果参数。下表中汇总了可由getsocketopt和setsockopt函数设置的选项，数据来自《UNIX网络编程卷1》。套接字选项粗分为两大基本类型：一是启用或禁止某个特性的二元选项（称为标志选项），二是取得并返回我们可以设置或检查的特定值的选项（称为值选项）。</p>
+<p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/%E5%A5%97%E6%8E%A5%E5%AD%97%E5%B1%82%E5%92%8CIP%E5%B1%82%E7%9A%84%E5%A5%97%E6%8E%A5%E5%AD%97%E9%80%89%E9%A1%B9%E6%B1%87%E6%80%BB.png" alt="套接字层和IP层的套接字选项汇总"></p>
+<p>例如想要设置SO_REUSEADDR，可以使用如下代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">int flag = 1;</span><br><span class="line">setsockopt(listen_fd,SOL_SOCKET,SO_REUSEADDR,&amp;flag,sizeof(flag));</span><br></pre></td></tr></table></figure>
+
+<p>如果想要获取当前套接字是否设置了SO_REUSEADDR,可以使用如下代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int flag;</span><br><span class="line">socklen_t len;</span><br><span class="line">getsockopt(listen_fd,SOL_SOCKET,SO_REUSEADDR,&amp;flag,&amp;len);</span><br></pre></td></tr></table></figure>
+
+<p>结果会被赋给flag，结果的长度会被赋给len。</p>
+<p><strong>SO_BROADCAST</strong> ：开启或禁止进程发送广播消息的能力。只有数据报套接字支持广播，还必须是在支持广播消息的网络上（如以太网，令牌环网等）。</p>
+<p><strong>SO_DEBUG</strong> ： 仅支持TCP，开启后，内核为TCP在该套接字发送和接收的所有分组保留详细跟踪信息。</p>
+<p><strong>SO_DONTROUTE</strong> ：规定外出的分组将绕过底层协议的正常路由机制。路由守护进程经常使用本选项来绕过路由表（路由表不正确时）以强制将分组从特定接口送出。</p>
+<p><strong>SO_ERROR</strong> ：当套接字上发生错误的时候，被设置为标准的Unix Exxx值中的一个。</p>
+<p><strong>SO_KEEPALIVE</strong> ：设置后，如果该套接字两小时内都没有数据交换，TCP就自动给对端发送一个keep-alive分节，对端必须响应这个分节，会导致如下三种情况之一</p>
+<ul>
+<li>对端以期望的ACK响应。一切正常，应用进程不会得到任何通知。如果有经过两小时没有数据交换，TCP再发送一个探测分节</li>
+<li>对端以RST响应，告知本端TCP对端已崩溃且重新启动。该套接字的待处理错误被置为ECONNRESET，套接字本身被关闭</li>
+<li>对端没有任何响应。TCP将再发送8个探测分节，间隔75秒。TCP在发出第一个探测分节后11分15秒内若没有得到任何响应则放弃</li>
+</ul>
+<p>本选项的功用是检测对端主机是否崩溃或变得不可达。检测各种TCP条件的方法汇总如下：</p>
+<table>
+<thead>
+<tr>
+<th align="center">情形</th>
+<th align="center">对端进程崩溃</th>
+<th align="center">对端主机崩溃</th>
+<th align="center">对端主机不可达</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">本端TCP正主动发送数据</td>
+<td align="center">对端TCP发送一个FIN，这通过使用select判断可读条件立即能检测出来。如果本端TCP发送另外一个分节，对端TCP 就以RST响应。如果在本端TCP 收到RST后应用进程仍试图写套接字，会触发SIGPIPE信号被发送给进程</td>
+<td align="center">本端TCP 将超时，且套接字的待处理错误被设置为ETIMEOUT</td>
+<td align="center">本端TCP 将超时，且套接字的待处理错误被设置为ETIMEOUT</td>
+</tr>
+<tr>
+<td align="center">本端TCP正主动接受数据</td>
+<td align="center">对端TCP 将发送一个FIN，我们将把它作为一个EOF读入</td>
+<td align="center">停止接收数据</td>
+<td align="center">停止接收数据</td>
+</tr>
+<tr>
+<td align="center">连接空闲，keepalive选项已设置</td>
+<td align="center">对端TCP 发送一个FIN，这通过使用select判断可读条件立即能检测出来</td>
+<td align="center">两小时后发送9个套测分节，然后套接字的待处理错误被设置为ETIMEOUT</td>
+<td align="center">两小时后发送9个套测分节，然后套接字的待处理错误被设置为EHOSTUNREACH</td>
+</tr>
+<tr>
+<td align="center">连接空闲，keepalive未设置</td>
+<td align="center">对端TCP 发送一个FIN，这通过使用select判断可读条件立即能检测出来</td>
+<td align="center">无</td>
+<td align="center">无</td>
+</tr>
+</tbody></table>
+<p><strong>SO_LINGER</strong>：指定close函数对面向连接的协议如何操作，默认操作是close立即返回，但是如果有数据残留在套接字发送缓冲区中，系统将试着把这些数据发送给对端。本选项在用户进程和内核间传递如下结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">struct linger&#123;</span><br><span class="line">	int    l_onoff;</span><br><span class="line">	int    l_linger;//逗留时间，POSIX规定单位为秒</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果l_onoff为0，那么本选项关闭，默认就是该情形，close立即返回。</li>
+<li>l_onoff非零，且l_linger为0。当close调用时TCP将终止该连接，并丢弃发送缓冲区的数据，然后发送一个RST给对端，正常的四路分手程序也没有了。这样就避免了TCP的TIME_WAIT状态，但是TIME_WAIT状态防止的旧连接重复分节在新连接上重现的问题也不可避免了。</li>
+<li>l_onoff非零，l_linger非零，那么当套接字关闭时内核将拖延一段时间，也就是说如果套接字发送缓冲区仍有数据，那么进程将进入睡眠直到所有数据以发送完毕并被对方确认或逗留时间到。但是如果套接字被设置为非阻塞的，那么它将不等待close完成，即使逗留时间非0也一样。使用该选项时，应用进程应该检查close的返回值，因为如果逗留时间在数据发送完并得到确认前就到了的话，close会返回EWOULDBLOCK错误，并且套接字发送缓冲区中的残留数据会被丢弃。</li>
+</ul>
+<p>关闭网络连接除了使用close，还可以使用shutdown，相比close判断引用计数为0时才关闭连接，shutdown是直接触发四路分手关闭连接；close终止读写两个方向的数据传送，shutdown则可以通过参数控制只关闭一个方向的数据传输。shutdown函数签名如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int shutdown(int sockfd,int howto);</span><br></pre></td></tr></table></figure>
+
+<p>sockfd代表套接字描述符，howto有三个选项：SHUT_RD、SHUT_WR、SHUT_RDWR分别代表哦关闭读、写和全关。</p>
+<p><strong>SO_OOBINLINE</strong>：开启时，带外数据将被留在正常的输入队列中。</p>
+<p><strong>SO_RCVBUF&#x2F;SO_SNDBUF</strong> ：接收缓冲区和发送缓冲区，缓冲区大小至少是MSS的四倍，因为TCP的快速恢复算法的工作机制。</p>
+<p><strong>SO_RCVTIMEO&#x2F;SO_SNDTIMEO</strong>： 给套接字的接收和发送设置超时值。</p>
+<p><strong>SO_REUSEADDR</strong> </p>
+<ul>
+<li>允许启动一个监听服务器并捆绑其众所周知端口，即使以前建立的将该端口用作他们的本地端口的连接仍然存在。所有TCP服务器都应该指定本套接字选项。</li>
+<li>允许在同一端口上启动同一服务器的多个实例，只要每个实例捆绑一个不同的本地IP地址即可。</li>
+<li>允许单个进程捆绑同一端口到多个套接字上，只要每次捆绑指定不同的本地IP地址即可。</li>
+<li>允许完全重复的捆绑，当一个IP地址和端口已绑定到某个套接字上时，如果传输协议支持，同样的IP地址和端口还可以捆绑到另一个套接字上，一般来说本特性仅支持UDP套接字。</li>
+</ul>
+<p><strong>SO_REUSEPORT</strong></p>
+<ul>
+<li>本选项允许完全重复的捆绑，不过只有在想要捆绑同一IP地址和端口的每个套接字都指定了本套接字选项才行</li>
+<li>如果被捆绑的IP地址是一个多播地址，那么SO_REUSEADDR和SO_REUSEPORT被认为是等效的</li>
+</ul>
+<p>在所有TCP服务器程序中，在调用bind之前设置SO_REUSEADDR套接字选项；当编写一个可在同一时刻在同一主机上运行多次的多播应用程序是，设置SO_REUSEADDR套接字选项，并将所参加多播组的地址作为本地IP地址捆绑。</p>
+<p><strong>SO_TYPE</strong> 返回套接字的类型，返回的整数值是SOCK_STREAM或SOCK_DGRAM之类的</p>
+<p><strong>SO_USELOOPBACK</strong> 本选项仅用于路由域套接字</p>
+<p>参考书目：《UNIX网络编程卷1》</p>
 
                 
             </div>
@@ -400,7 +419,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2022/12/06/MacOS%E7%B3%BB%E7%BB%9F%E4%B8%8BQT%E8%BF%9E%E6%8E%A5mysql%E6%95%B0%E6%8D%AE%E5%BA%93/">https://wxyfq.github.io/2022/12/06/MacOS%E7%B3%BB%E7%BB%9F%E4%B8%8BQT%E8%BF%9E%E6%8E%A5mysql%E6%95%B0%E6%8D%AE%E5%BA%93/</a>
+                    <a href="https://wxyfq.github.io/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%83)%EF%BC%9A%E5%A5%97%E6%8E%A5%E5%AD%97%E9%80%89%E9%A1%B9/">https://wxyfq.github.io/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%83)%EF%BC%9A%E5%A5%97%E6%8E%A5%E5%AD%97%E9%80%89%E9%A1%B9/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -438,12 +457,12 @@
                     
                         <div class="article-tag">
                             
-                                <a href="/tags/Qt/">
-                                    <span class="chip bg-color">Qt</span>
+                                <a href="/tags/Linux/">
+                                    <span class="chip bg-color">Linux</span>
                                 </a>
                             
-                                <a href="/tags/mysql/">
-                                    <span class="chip bg-color">mysql</span>
+                                <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                    <span class="chip bg-color">网络编程</span>
                                 </a>
                             
                         </div>
@@ -613,46 +632,52 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2022/12/06/%E5%85%83%E5%AF%B9%E8%B1%A1%E7%B3%BB%E7%BB%9F/">
+                <a href="/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%83)%EF%BC%9A%E5%A5%97%E6%8E%A5%E5%AD%97%E9%80%89%E9%A1%B9/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/17.jpg" class="responsive-img" alt="元对象系统">
+                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="Linux网络编程(七)：套接字选项">
                         
-                        <span class="card-title">元对象系统</span>
+                        <span class="card-title">Linux网络编程(七)：套接字选项</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            简要介绍Qt的元对象系统的用途
+                            介绍socket套接字选项
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-29
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/Qt/" class="post-category">
-                                    Qt
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/Qt/">
-                        <span class="chip bg-color">Qt</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>
@@ -666,31 +691,31 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/06/C++%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%9A%E4%BD%BF%E7%94%A8async()%E5%88%9B%E5%BB%BA%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/">
+                <a href="/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AD)%EF%BC%9Aepoll/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="C++多线程学习笔记：使用std::async()创建异步任务">
+                        <img src="/medias/featureimages/18.jpg" class="responsive-img" alt="Linux网络编程(六)：epoll">
                         
-                        <span class="card-title">C++多线程学习笔记：使用std::async()创建异步任务</span>
+                        <span class="card-title">Linux网络编程(六)：epoll</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍C++标准库使用std::async()函数创建异步任务的方法
+                            介绍epoll的用法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-06
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-29
                             </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
                             
-                            <a href="/categories/C-%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="post-category">
-                                    C++多线程
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
                                 </a>
                             
                             
@@ -700,12 +725,12 @@
                 
                 <div class="card-action article-tags">
                     
-                    <a href="/tags/C/">
-                        <span class="chip bg-color">C++</span>
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
                     </a>
                     
-                    <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/">
-                        <span class="chip bg-color">多线程</span>
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
                     </a>
                     
                 </div>
