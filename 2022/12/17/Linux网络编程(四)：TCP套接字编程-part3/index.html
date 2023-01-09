@@ -266,7 +266,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-17
+                    2023-01-09
                 </div>
                 
 
@@ -314,7 +314,7 @@
 
 <p>子进程和父进程继续执行fork调用之后的指令。子进程是父进程的副本，拥有父进程的数据空间、堆和栈的副本。父进程和子进程共享正文段（正文段是指CPU执行的机器指令部分）。</p>
 <p>根据上面介绍的fork的用法，我们的服务端程序可以进行如下修改：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">for(;;)&#123;</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  if((pid=fork())&lt;0) &#123;</span><br><span class="line">    //错误处理</span><br><span class="line">    std::cerr&lt;&lt;&quot;Fail to fork subprocess&quot;&lt;&lt;std::endl;</span><br><span class="line">  &#125;else if(pid==0)&#123;</span><br><span class="line">    //子进程</span><br><span class="line">    close(listen_fd);</span><br><span class="line">    std::cout&lt;&lt;&quot;New connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;&quot;:&quot;</span><br><span class="line">    &lt;&lt;ntohs(client_addr.sin_port)&lt;&lt;std::endl;</span><br><span class="line">    while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">      write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">      memset(buf,0,1024);</span><br><span class="line">      ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    //父进程</span><br><span class="line">    close(connected_fd);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">for(;;)&#123;</span><br><span class="line">	len = sizeof(client_addr);</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  if((pid=fork())&lt;0) &#123;</span><br><span class="line">    //错误处理</span><br><span class="line">    std::cerr&lt;&lt;&quot;Fail to fork subprocess&quot;&lt;&lt;std::endl;</span><br><span class="line">  &#125;else if(pid==0)&#123;</span><br><span class="line">    //子进程</span><br><span class="line">    close(listen_fd);</span><br><span class="line">    std::cout&lt;&lt;&quot;New connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;&quot;:&quot;</span><br><span class="line">    &lt;&lt;ntohs(client_addr.sin_port)&lt;&lt;std::endl;</span><br><span class="line">    while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">      write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">      memset(buf,0,1024);</span><br><span class="line">      ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    //父进程</span><br><span class="line">    close(connected_fd);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>修改的范围从调用listen函数以后开始，为了节省篇幅，其他代码省略。这样修改以后，每当有新的客户端连接，服务器都会fork一个子进程，而主进程则继续阻塞在accept函数，等待新的连接。子进程不需要调用accept函数等待新连接，所以调用close将监听套接字listen_fd关闭；同理父进程不需要处理已连接套接字，所以调用close关闭connected_fd。</p>
 <p>在父函数调用close关闭connected_fd并不会关闭子进程中对应的TCP连接，同理子进程中关闭listen_fd也不会关闭父进程的监听套接字。每个文件或套接字都有一个引用计数。引用计数在文件表项中维护，表示当前打开着的引用该文件或套接字的描述符的个数。fork返回后，两个描述符在父子进程之间共享，所以各自的引用计数会变成2。close函数的调用只是将描述符的引用计数减1，如果描述符的引用计数在减1以后仍然大于0，那么该描述符就不会被关闭。</p>
@@ -632,13 +632,13 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%8C)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part1/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%89)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part2/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Linux网络编程(二)：TCP套接字编程-part1">
+                        <img src="/medias/featureimages/5.jpg" class="responsive-img" alt="Linux网络编程(三)：TCP套接字编程-part2">
                         
-                        <span class="card-title">Linux网络编程(二)：TCP套接字编程-part1</span>
+                        <span class="card-title">Linux网络编程(三)：TCP套接字编程-part2</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -711,7 +711,7 @@
         <div class="col s12 m8 l8 copy-right">
             Copyright&nbsp;&copy;
             
-                <span id="year">2019-2022</span>
+                <span id="year">2019-2023</span>
             
             <span id="year">2019</span>
             <a href="/about" target="_blank">wenxy</a>
@@ -720,7 +720,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">60k</span>&nbsp;字
+                class="white-color">62.3k</span>&nbsp;字
             
             
             

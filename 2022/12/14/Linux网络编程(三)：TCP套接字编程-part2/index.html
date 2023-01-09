@@ -266,7 +266,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2022-12-15
+                    2023-01-09
                 </div>
                 
 
@@ -331,7 +331,7 @@
 
 <p>参数sockfd表示监听套接字的描述符，cliaddr和addrlen是值-结果参数，用来返回已连接的对端进程的协议地址和地址长度。accept成功会返回一个由内核生成的套接字描述符，表示与客户端的TCP连接，失败会返回-1.</p>
 <p>accept返回的套接字描述符是一个已连接套接字描述符。一个服务器通常仅仅创建一个监听套接字，内核会为每个由服务器进程接受的客户连接创建一个已连接套接字。至此，我们可以写一个简单的服务器程序，程序监听9000端口，接收客户端连接请求成功创建已连接套接字后在终端中输出客户端地址，然后从套接字中读取信息（阻塞读），读取到信息后再将信息回写到套接字中，代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">int main()&#123;</span><br><span class="line">  int listen_fd,connected_fd;</span><br><span class="line">  socklen_t len;</span><br><span class="line">  char buf[1024]=&#123;&#125;;</span><br><span class="line">  char cli_addr_buf[128];</span><br><span class="line">  std::string ack_msg_prefix = &quot;Server receive msg:&quot;;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9000);</span><br><span class="line">  server_addr.sin_addr.s_addr = INADDR_ANY;</span><br><span class="line">  listen_fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  if(bind(listen_fd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr)))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;bind failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;;</span><br><span class="line">  if(listen(listen_fd,10))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;listen failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  std::cout&lt;&lt;&quot;Connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;std::endl;</span><br><span class="line">  while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">    write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">    memset(buf,0,1024);</span><br><span class="line">    ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">int main()&#123;</span><br><span class="line">  int listen_fd,connected_fd;</span><br><span class="line">  socklen_t len;</span><br><span class="line">  char buf[1024]=&#123;&#125;;</span><br><span class="line">  char cli_addr_buf[128];</span><br><span class="line">  std::string ack_msg_prefix = &quot;Server receive msg:&quot;;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9000);</span><br><span class="line">  server_addr.sin_addr.s_addr = INADDR_ANY;</span><br><span class="line">  listen_fd = socket(AF_INET,SOCK_STREAM,0);</span><br><span class="line">  if(bind(listen_fd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr)))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;bind failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;;</span><br><span class="line">  if(listen(listen_fd,10))&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;listen failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  len = sizeof(client_addr);</span><br><span class="line">  connected_fd = accept(listen_fd,(struct sockaddr*)&amp;client_addr,&amp;len);</span><br><span class="line">  if(connected_fd==-1)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;accept failed :&quot;&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  std::cout&lt;&lt;&quot;Connection from:&quot;&lt;&lt;inet_ntop(AF_INET,&amp;client_addr.sin_addr,cli_addr_buf,128)&lt;&lt;std::endl;</span><br><span class="line">  while(read(connected_fd,buf,1024))&#123;</span><br><span class="line">    write(connected_fd,ack_msg_prefix.append(buf).c_str(),ack_msg_prefix.length());</span><br><span class="line">    memset(buf,0,1024);</span><br><span class="line">    ack_msg_prefix = &quot;Receive msg:&quot;;</span><br><span class="line">  &#125;</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>代码编译运行后使用netcat模拟客户端，调用命令：nc 127.0.0.1 9000连接服务器，这里使用127.0.0.1作为地址是因为服务器程序是在本机上运行的。调用命令后，想控制台输入信息，会得到服务器的回应：</p>
 <p><img src="https://raw.githubusercontent.com/wxyfq/blog-pic/master/image-20221215185929553.png?token=ABX7WFTW5KT2WQF7QBJ6PT3DTL7FW" alt="image-20221215185929553"></p>
@@ -580,13 +580,13 @@
             <div class="article-badge left-badge text-color">
                 <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%8C)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part1/">
+                <a href="/2022/12/17/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%9B%9B)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part3/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Linux网络编程(二)：TCP套接字编程-part1">
+                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="Linux网络编程(四)：TCP套接字编程-part3">
                         
-                        <span class="card-title">Linux网络编程(二)：TCP套接字编程-part1</span>
+                        <span class="card-title">Linux网络编程(四)：TCP套接字编程-part3</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -597,7 +597,7 @@
                     </div>
                     <div class="publish-info">
                         <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-14
+                            <i class="far fa-clock fa-fw icon-date"></i>2022-12-17
                         </span>
                         <span class="publish-author">
                             
@@ -633,24 +633,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/13/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%80)%EF%BC%9ATCP%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/">
+                <a href="/2022/12/14/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%BA%8C)%EF%BC%9ATCP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B-part1/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/21.jpg" class="responsive-img" alt="Linux网络编程(一)：TCP基础概念">
+                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Linux网络编程(二)：TCP套接字编程-part1">
                         
-                        <span class="card-title">Linux网络编程(一)：TCP基础概念</span>
+                        <span class="card-title">Linux网络编程(二)：TCP套接字编程-part1</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍TCP基本概念
+                            介绍Linux环境下TCP套接字编程方法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-13
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-14
                             </span>
                         <span class="publish-author">
                             
@@ -712,7 +712,7 @@
         <div class="col s12 m8 l8 copy-right">
             Copyright&nbsp;&copy;
             
-                <span id="year">2019-2022</span>
+                <span id="year">2019-2023</span>
             
             <span id="year">2019</span>
             <a href="/about" target="_blank">wenxy</a>
@@ -721,7 +721,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">60k</span>&nbsp;字
+                class="white-color">62.3k</span>&nbsp;字
             
             
             
