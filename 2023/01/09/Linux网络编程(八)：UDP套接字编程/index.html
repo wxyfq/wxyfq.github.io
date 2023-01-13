@@ -273,7 +273,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2.3k
+                    2.4k
                 </div>
                 
 
@@ -339,6 +339,7 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">for(;;)&#123;</span><br><span class="line">   FD_SET(STDIN_FILENO,&amp;rset);</span><br><span class="line">   FD_SET(sockfd,&amp;rset);</span><br><span class="line">   int maxfd = sockfd+1;</span><br><span class="line">   select(maxfd,&amp;rset, nullptr, nullptr, nullptr);</span><br><span class="line">   if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">     getline(std::cin,line);</span><br><span class="line">     if(write(sockfd,line.c_str(),line.length())&lt;0)&#123;</span><br><span class="line">       std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">       continue;</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   if(FD_ISSET(sockfd,&amp;rset))&#123;</span><br><span class="line">     char buff[1024]=&#123;0&#125;;</span><br><span class="line">     if((read(sockfd,buff,1024))&lt;0)&#123;</span><br><span class="line">       std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">       continue;</span><br><span class="line">     &#125;</span><br><span class="line">     std::cout&lt;&lt;&quot;echo:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
 
 <p>UDP允许发送空数据报，所以read可以不处理返回值为0的情况，只在返回值小于0时返回错误信息。</p>
+<p>参考书目：《UNIX网络编程》</p>
 
                 
             </div>
@@ -578,30 +579,29 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="far fa-dot-circle"></i>&nbsp;本篇
-            </div>
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
             <div class="card">
-                <a href="/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AB)%EF%BC%9AUDP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">
+                <a href="/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B9%9D)%EF%BC%9A%E5%B9%BF%E6%92%AD/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/21.jpg" class="responsive-img" alt="Linux网络编程(八)：UDP套接字编程">
+                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="Linux网络编程(九)：广播">
                         
-                        <span class="card-title">Linux网络编程(八)：UDP套接字编程</span>
+                        <span class="card-title">Linux网络编程(九)：广播</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍UDP套接字编程方法
+                            介绍广播的使用方法
                         
                     </div>
                     <div class="publish-info">
-                            <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2023-01-09
-                            </span>
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2023-01-09
+                        </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -614,7 +614,6 @@
                         </span>
                     </div>
                 </div>
-
                 
                 <div class="card-action article-tags">
                     
@@ -725,7 +724,7 @@
             <br>
             
             &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                class="white-color">62.3k</span>&nbsp;字
+                class="white-color">67.5k</span>&nbsp;字
             
             
             

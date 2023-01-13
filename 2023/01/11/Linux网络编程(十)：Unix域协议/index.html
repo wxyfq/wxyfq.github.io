@@ -1,0 +1,992 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="Linux网络编程">
+    <meta name="description" content="好记性不如烂笔头">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+    <title>Linux网络编程(十)：Unix域协议 | wenxy的博客</title>
+    <link rel="icon" type="image/png" href="/me.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+
+    <script src="/libs/jquery/jquery.min.js"></script>
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+
+
+<body>
+    <header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                    <img src="/medias/logo.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">wenxy的博客</span>
+                </a>
+            </div>
+            
+
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a>
+<ul class="right nav-menu">
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/" class="waves-effect waves-light">
+      
+      <i class="fas fa-home" style="zoom: 0.6;"></i>
+      
+      <span>首页</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/tags" class="waves-effect waves-light">
+      
+      <i class="fas fa-tags" style="zoom: 0.6;"></i>
+      
+      <span>标签</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/categories" class="waves-effect waves-light">
+      
+      <i class="fas fa-bookmark" style="zoom: 0.6;"></i>
+      
+      <span>分类</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/archives" class="waves-effect waves-light">
+      
+      <i class="fas fa-archive" style="zoom: 0.6;"></i>
+      
+      <span>归档</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/about" class="waves-effect waves-light">
+      
+      <i class="fas fa-user-circle" style="zoom: 0.6;"></i>
+      
+      <span>关于</span>
+    </a>
+    
+  </li>
+  
+  <li>
+    <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+      <i id="searchIcon" class="fas fa-search" title="搜索" style="zoom: 0.85;"></i>
+    </a>
+  </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">wenxy的博客</div>
+        <div class="logo-desc">
+            
+            好记性不如烂笔头
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li class="m-nav-item">
+	  
+		<a href="/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-home"></i>
+			
+			首页
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/tags" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-tags"></i>
+			
+			标签
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/categories" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-bookmark"></i>
+			
+			分类
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/archives" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-archive"></i>
+			
+			归档
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/about" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-user-circle"></i>
+			
+			关于
+		</a>
+          
+        </li>
+        
+        
+    </ul>
+</div>
+
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/0.jpg')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">Linux网络编程(十)：Unix域协议</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<main class="container content">
+
+    
+    <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/Linux/">
+                                <span class="chip bg-color">Linux</span>
+                            </a>
+                        
+                            <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                <span class="chip bg-color">网络编程</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                Linux网络编程
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2023-01-11
+                </div>
+                
+
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
+                    2023-01-13
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
+                    3.5k
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                    16 分
+                </div>
+                
+
+                
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+
+        
+
+        
+        <!-- 代码块折行 -->
+        <style type="text/css">
+            code[class*="language-"], pre[class*="language-"] { white-space: pre-wrap !important; }
+        </style>
+        
+
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <p>Unix域协议不是一个实际的协议族，而是在单个主机上执行客户&#x2F;服务器通信的一种方法，所用API就是套接字API。Unix域提供字节流套接字和数据报套接字，类似TCP和UDP。所以可以很容易的将基于TCP和UDP通信的代码修改成使用Unix域协议的代码。使用Unix域套接字进行通信相对于使用因特网域套接字效率更高，因为Unix域套接字仅仅复制数据，不执行协议处理，不需要添加或删除网络报头，无需计算校验和，不需要产生顺序号，无需发送确认报文。Unix域数据报服务是可靠的，既不会丢失报文，也不会传递出错。Unix域套接字还可以在不同进程之间传递描述符和用户ID及组ID，这是网络套接字办不到的。</p>
+<p>Unix域套接字有自己的地址结构，在头文件&lt;sys&#x2F;un.h&gt;中定义：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/un.h&gt;</span><br><span class="line">struct sockaddr_un&#123;</span><br><span class="line">	sa_family_t sun_family;//AF_LOCAL</span><br><span class="line">	char        sun_path[104];//null-terminated pathname</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是sun_path中保存的路径名必须以空字符结尾。基于Unix域字节流套接字的通信代码如下所示：</p>
+<p>server：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;sys/un.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  struct sockaddr_un addr;</span><br><span class="line">  int sockfd,fd;</span><br><span class="line">  const char* path = &quot;/tmp/addr&quot;;</span><br><span class="line">  unlink(path);</span><br><span class="line">  sockfd = socket(AF_LOCAL,SOCK_STREAM,0);</span><br><span class="line">  memset(&amp;addr,0,sizeof(addr));</span><br><span class="line">  addr.sun_family = AF_LOCAL;</span><br><span class="line">  strncpy(addr.sun_path,path, strlen(path));</span><br><span class="line">  bind(sockfd,(struct sockaddr*)&amp;addr,sizeof(addr));</span><br><span class="line">  listen(sockfd,5);</span><br><span class="line">  if((fd=accept(sockfd, nullptr, nullptr))&lt;0)&#123;</span><br><span class="line">    std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    char buf[1024]=&#123;0&#125;;</span><br><span class="line">    ssize_t n = 0;</span><br><span class="line">    if((n=read(fd,buf,1024))==0)&#123;</span><br><span class="line">      std::cout&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">      return 0;</span><br><span class="line">    &#125;else if(n&lt;0)&#123;</span><br><span class="line">      std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">      return -1;</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">      std::cout&lt;&lt;buf&lt;&lt;std::endl;</span><br><span class="line">      write(fd,buf,n);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>client：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;sys/un.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;cstring&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  std::string line;</span><br><span class="line">  struct sockaddr_un server_addr1;</span><br><span class="line">  const char *path = &quot;/tmp/addr&quot;;</span><br><span class="line">  int stream_sockfd;</span><br><span class="line">  stream_sockfd = socket(AF_LOCAL,SOCK_STREAM,0);</span><br><span class="line">  memset(&amp;server_addr1,0,sizeof(server_addr1));</span><br><span class="line">  server_addr1.sun_family = AF_LOCAL;</span><br><span class="line">  strncpy(server_addr1.sun_path,path,strlen(path));</span><br><span class="line"></span><br><span class="line">  if(connect(stream_sockfd,(struct sockaddr*)&amp;server_addr1,sizeof(server_addr1))&lt;0)&#123;</span><br><span class="line">    std::cout&lt;&lt;&quot;fail to connect to server&quot;&lt;&lt;std::endl;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  fd_set rset;</span><br><span class="line">  FD_ZERO(&amp;rset);</span><br><span class="line">  int maxfd = stream_sockfd+1;</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    FD_SET(STDIN_FILENO,&amp;rset);</span><br><span class="line">    FD_SET(stream_sockfd,&amp;rset);</span><br><span class="line">    select(maxfd,&amp;rset, nullptr, nullptr,nullptr);</span><br><span class="line">    if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">        std::getline(std::cin,line);</span><br><span class="line">        write(stream_sockfd,line.c_str(),line.length());</span><br><span class="line">    &#125;</span><br><span class="line">    if(FD_ISSET(stream_sockfd,&amp;rset))&#123;</span><br><span class="line">      char buf[1024]=&#123;0&#125;;</span><br><span class="line">      ssize_t n = 0;</span><br><span class="line">      if((n=read(stream_sockfd,buf,1024))==0)&#123;</span><br><span class="line">        std::cout&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">        return 0;</span><br><span class="line">      &#125;else if(n&lt;0)&#123;</span><br><span class="line">        std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">        continue;</span><br><span class="line">      &#125;</span><br><span class="line">      std::cout&lt;&lt;buf&lt;&lt;std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>基于Unix数据报套接字的通信代码与UDP通信代码也基本一致，比较简单，这里就不展示了。</p>
+<p>Unix域协议还可以通过函数socketpair创建一个流管道：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">int socketpair(int family,int type,int protocol,int sockfd[2]);</span><br></pre></td></tr></table></figure>
+
+<p>该函数只适用于Unix域套接字。如果应用于网络套接字，即将family设置为AF_INET，linux环境下在向套接字中写数据时会得到一个“Bad file descriptor”错误，macos虽然没有报错，但是写入的数据没有办法完整递送，函数说明中也是将此作为一个bug标注出来。使用socketpair得到的管道称为流管道，与pipe创建的普通管道相比，流管道是全双工的。</p>
+<p>Unix域协议可以用来在进程间传递描述符。在不使用Unix域协议的情况下传递一个打开的描述符，可以通过fork子进程的方式实现，父进程和子进程共享打开的描述符，然后父进程关闭描述符，子进程可以直接进行读写等操作，或者调用exec执行另一个程序，在不设置FD_CLOEXEC的前提下，描述符会保持开启，这样描述符就完成了从父进程到子进程的传递。然而这种方式只能用于从父进程到子进程之间的描述符传递，如果想从子进程到父进程之间传递描述符，或者想在两个没有血缘关系的进程之间传递描述符，就只能依赖Unix域协议。</p>
+<p>使用Unix域协议传递描述符需要配合使用一组通用的读写函数：sendmsg和recvmsg，两个函数签名如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">ssize_t recvmsg(int sockfd,struct msghdr *msg, int flags);</span><br><span class="line">ssize_t sendmsg(int sockfd,struct msghdr *msg, int flags);</span><br></pre></td></tr></table></figure>
+
+<p>这两个函数把大部分参数封装到一个msghdr结构中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">struct msghdr&#123;</span><br><span class="line">	void         *msg_name;</span><br><span class="line">	socklen_t    msg_namelen;</span><br><span class="line">	struct iovec *msg_iov;</span><br><span class="line">	int          msg_iovlen;</span><br><span class="line">	void         msg_controllen;</span><br><span class="line">	int          msg_flags;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>msg_name和msg_namelen用于套接字未连接时指明地址，类似recvfrom和sendto的最后两个参数；msg_iov和msg_iovlen用于指定输入或输出缓冲区数组。iovec结构体定义如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/uio.h&gt;</span><br><span class="line">struct iovec&#123;</span><br><span class="line">	void   *iov_base;</span><br><span class="line">	size_t iov_len;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>iov_base指向缓冲区起始地址，iov_len表示缓冲区大小。iovec结构数组中元素的数量存在一个最大值的限制，使用IOV_MAX宏代表，各个实现不一样，macos和linux上该值为1024。</p>
+<p>该结构体还可以跟以下两个函数结合使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/uio.h&gt;</span><br><span class="line">ssize_t readv(int filedes,const struct iovec *iov,int iovcnt);</span><br><span class="line">ssize_t writev(int filedes,const struct iovec *iov,int iovcnt);</span><br></pre></td></tr></table></figure>
+
+<p>这两个函数允许单个系统调用读入到或写出自一个或多个缓冲区，被称为分散读和集中写。</p>
+<p>msg_control和msg_controllen指定可选的辅助数据的位置和大小，辅助数据又叫控制数据，我们需要传递的描述符就存储在辅助数据中。最后一个msg_flags标志变量需要跟recvmsg和sendmsg中的flags标志变量区分开：msg_flags只有在recvmsg函数中才生效，此时flags参数被复制到msg_flags中，并由内核使用其值驱动接受处理过程，然后依据recvmsg的结果更新msg_flags成员的值。sendmsg函数忽略msg_flags字段，所以想要设置标志位，只能在flags中设置。</p>
+<p>recvmsg和sendmsg支持的标志位，各个实现上有所不同，可以通过man命令查询手册看到当前实现支持的标志位。接下来我们尝试使用这两个函数实现UDP数据报的传递：</p>
+<p>client：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  struct sockaddr_in server_addr;</span><br><span class="line">  int sockfd;</span><br><span class="line">  int flag = 1;</span><br><span class="line"></span><br><span class="line">  std::string line;</span><br><span class="line">  sockfd = socket(AF_INET,SOCK_DGRAM,0);</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9001);</span><br><span class="line">  inet_pton(AF_INET,&quot;127.0.0.1&quot;,&amp;server_addr.sin_addr);</span><br><span class="line">  struct iovec vec[1];</span><br><span class="line"></span><br><span class="line">  struct msghdr msg;</span><br><span class="line">  memset(&amp;msg,0,sizeof(msghdr));</span><br><span class="line">  msg.msg_name = &amp;server_addr;</span><br><span class="line">  msg.msg_namelen = sizeof(server_addr);</span><br><span class="line">  msg.msg_iov = vec;</span><br><span class="line">  msg.msg_iovlen = 1;</span><br><span class="line">  fd_set rset;</span><br><span class="line">  FD_ZERO(&amp;rset);</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    FD_SET(STDIN_FILENO,&amp;rset);</span><br><span class="line">    FD_SET(sockfd,&amp;rset);</span><br><span class="line">    int maxfd = sockfd+1;</span><br><span class="line">    select(maxfd,&amp;rset, nullptr, nullptr, nullptr);</span><br><span class="line">    if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">      getline(std::cin,line);</span><br><span class="line">      char buf[1024]=&#123;0&#125;;</span><br><span class="line">      strcpy(buf,line.c_str());</span><br><span class="line">      vec[0].iov_base = buf;</span><br><span class="line">      vec[0].iov_len = line.size();</span><br><span class="line">      if(sendmsg(sockfd,&amp;msg,0)&lt;0)&#123;</span><br><span class="line">        std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">        continue;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    if(FD_ISSET(sockfd,&amp;rset))&#123;</span><br><span class="line">      char buff[1024]=&#123;0&#125;;</span><br><span class="line">      vec[0].iov_base = buff;</span><br><span class="line">      recvmsg(sockfd,&amp;msg,0);</span><br><span class="line">      std::cout&lt;&lt;&quot;echo:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>server:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  socklen_t client_len = sizeof(client_addr);</span><br><span class="line">  int sockfd;</span><br><span class="line">  sockfd = socket(AF_INET,SOCK_DGRAM,0);</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9001);</span><br><span class="line">  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line">  bind(sockfd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr));</span><br><span class="line"></span><br><span class="line">  struct iovec vec[1];</span><br><span class="line">  struct msghdr msg;</span><br><span class="line">  memset(&amp;msg,0,sizeof(msghdr));</span><br><span class="line">  msg.msg_name = &amp;client_addr;</span><br><span class="line">  msg.msg_namelen = client_len;</span><br><span class="line">  msg.msg_iov = vec;</span><br><span class="line">  msg.msg_iovlen = 1;</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    char buff[1024]=&#123;0&#125;;</span><br><span class="line">    vec[0].iov_base = buff;</span><br><span class="line">    vec[0].iov_len = 1024;</span><br><span class="line">    int n = recvmsg(sockfd,&amp;msg,0);</span><br><span class="line">    if(n&lt;0)&#123;</span><br><span class="line">      std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">      return -1;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout&lt;&lt;&quot;receive:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">    vec[0].iov_len = n;</span><br><span class="line">    sendmsg(sockfd,&amp;msg,0);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到相比于普通的sendto&#x2F;write和recvfrom&#x2F;read函数，使用sendmsg和recvmsg需要写更多的代码，但是后者却是最通用的IO函数不仅可以实现单个缓冲区的读写，还可以实现多个缓冲区的分散读，集中写，最重要的是还可以传送控制信息，最后一点是其他I&#x2F;O函数做不到的。</p>
+<p>辅助数据（ancillary data）又叫控制信息，是通过msg_control和msg_controllen进行接收的，辅助数据存放在一个或多个cmsghdr结构体中，cmsghdr的定义如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">struct cmsghdr&#123;</span><br><span class="line">	socklen_t    cmsg_len;    //length in bytes,include this structure</span><br><span class="line">	int          cmsg_level;  //originating protocol</span><br><span class="line">	int          cmsg_type;   //protocol-specific type</span><br><span class="line">	/* followed by	unsigned char  cmsg_data[]; */</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>完整的辅助数据类型我暂时没有找到，部分辅助数据的用途如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>cmsg_level</th>
+<th>cmsg_type</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IPv4</td>
+<td>IPPROTO_IP</td>
+<td>IP_RECVDSTADDR<br />IP_RECVIF</td>
+<td>随UDP数据报接收目的地址<br />随UDP数据报接收接口索引</td>
+</tr>
+<tr>
+<td>IPv6</td>
+<td>IPPROTO_IPv6</td>
+<td>IPv6_DSTOPTS<br />IPv6_HOPLIMIT<br />IPv6_HOPOPTS<br />IPv6_NEXTHOP<br />IPv6_PKTINFO<br />IPv6_RTHDR<br />IPv6_TCLASS</td>
+<td>指定&#x2F;接收目的地选项<br />指定&#x2F;接收跳限<br />指定&#x2F;接收步跳选项<br />指定下一跳地址<br />指定&#x2F;接收分组信息<br />指定&#x2F;接收路由首部<br />指定&#x2F;接收分组流通类别</td>
+</tr>
+<tr>
+<td>Unix域</td>
+<td>SOL_SOCKET</td>
+<td>SCM_RIGHTS<br />SCM_CREDS</td>
+<td>发送&#x2F;接收描述符<br />发送&#x2F;接收用户凭证</td>
+</tr>
+</tbody></table>
+<p>需要注意的是，msg_control指向的是一个cmsghdr结构体数组，而且msg_control指向的辅助数据必须为cmsghdr结构适当地对齐。msg_control指向第一个辅助数据对象，辅助数据的总长度由msg_controllen指定，每个对象开头都是一个描述该对象的cmsghdr结构。在cmsg_type成员和实际数据之间可以有填充字节，从数据结尾处到下一个辅助数据对象之前也可以有填充字节。为了对应用程序屏蔽可能出现的填充字节，定义了一下5个宏以简化对辅助数据的处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;sys/param.h&gt;</span><br><span class="line">struct cmsghdr *CMSG_FIRSTHDR(struct msghdr *mhdrptr);//返回指向第一个cmsghdr结构的指针，无辅助数据时返回NULL</span><br><span class="line">struct cmsghdr *CMSG_NEXTHDR(struct msghdr *mhdrptr,struct cmsghdr *cmsgptr);//返回指向下一个cmsghdr结构的指针，若不再有辅助数据对象则返回NULL</span><br><span class="line">unsigned char *CMSG_DATA(struct cmsghdr *cmsgptr);//返回指向与cmsghdr结构关联的数据的第一个字节的指针</span><br><span class="line">unsigned int CMSG_LEN(unsigned int length);//返回给定数据量下存放到cmsg_len中的值</span><br><span class="line">unsigned int CMSG_SPACE(unsigned int length)；//返回给定数据量下一个辅助数据对象总的大小</span><br></pre></td></tr></table></figure>
+
+<p>了解了以上所有的技术细节以后，我们现在尝试在客户端和服务端之间传递描述符，我们在客户端打开一个文本文档，然后将描述符传递给服务端，服务端接收到描述符后，向文件中写入数据然后关闭。代码如下：</p>
+<p>client：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;sys/un.h&gt;</span><br><span class="line">#include &lt;cstring&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;fcntl.h&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  int sendfd = open(&quot;hello.txt&quot;,O_RDWR|O_CREAT|O_APPEND,S_IRWXU);</span><br><span class="line">  std::cout&lt;&lt;sendfd&lt;&lt;std::endl;</span><br><span class="line">  struct sockaddr_un server_addr;</span><br><span class="line">  int sockfd;</span><br><span class="line">  const char* path=&quot;/tmp/addr&quot;;</span><br><span class="line">  char c;</span><br><span class="line">  std::string line;</span><br><span class="line">  sockfd = socket(AF_LOCAL,SOCK_DGRAM,0);;</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sun_family = AF_LOCAL;</span><br><span class="line">  strncpy(server_addr.sun_path,path,strlen(path));</span><br><span class="line"></span><br><span class="line">  struct iovec vec[1];</span><br><span class="line">  vec[0].iov_base=&amp;c;</span><br><span class="line">  vec[0].iov_len=1;</span><br><span class="line"></span><br><span class="line">  struct msghdr msg;</span><br><span class="line">  memset(&amp;msg,0,sizeof(msghdr));</span><br><span class="line">  msg.msg_name = &amp;server_addr;</span><br><span class="line">  msg.msg_namelen = sizeof(server_addr);</span><br><span class="line">  msg.msg_iov = vec;</span><br><span class="line">  msg.msg_iovlen = 1;</span><br><span class="line"></span><br><span class="line">  union&#123;</span><br><span class="line">    struct cmsghdr cm;</span><br><span class="line">    char control[CMSG_SPACE(sizeof(int))]=&#123;0&#125;;</span><br><span class="line">  &#125;control_un;</span><br><span class="line">  msg.msg_control = control_un.control;</span><br><span class="line">  msg.msg_controllen = sizeof(control_un.control);</span><br><span class="line">  struct cmsghdr *cmptr;</span><br><span class="line">  cmptr = CMSG_FIRSTHDR(&amp;msg);</span><br><span class="line">  cmptr-&gt;cmsg_len = CMSG_LEN(sizeof(int));</span><br><span class="line">  cmptr-&gt;cmsg_level = SOL_SOCKET;</span><br><span class="line">  cmptr-&gt;cmsg_type = SCM_RIGHTS;</span><br><span class="line">  *((int *)CMSG_DATA(cmptr)) = sendfd;</span><br><span class="line"></span><br><span class="line">  if(sendmsg(sockfd,&amp;msg,0)&lt;0)&#123;</span><br><span class="line">    std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>server:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;sys/un.h&gt;</span><br><span class="line">#include &lt;cstring&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">  const char* content = &quot;hello world\n&quot;;</span><br><span class="line">  const char* path = &quot;/tmp/addr&quot;;</span><br><span class="line">  unlink(path);</span><br><span class="line">  struct sockaddr_un server_addr;</span><br><span class="line">  int sockfd;</span><br><span class="line">  char c;</span><br><span class="line">  sockfd = socket(AF_LOCAL,SOCK_DGRAM,0);</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sun_family = AF_LOCAL;</span><br><span class="line">  strncpy(server_addr.sun_path,path,strlen(path));</span><br><span class="line">  bind(sockfd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr));</span><br><span class="line"></span><br><span class="line">  struct iovec vec[1];</span><br><span class="line">  vec[0].iov_base = &amp;c;</span><br><span class="line">  vec[0].iov_len = 1;</span><br><span class="line">  union&#123;</span><br><span class="line">    struct cmsghdr cm;</span><br><span class="line">    char control[CMSG_SPACE(sizeof(int))]=&#123;0&#125;;</span><br><span class="line">  &#125;control_un;</span><br><span class="line">  struct cmsghdr *cmptr;</span><br><span class="line">  struct msghdr msg;</span><br><span class="line">  memset(&amp;msg,0,sizeof(msghdr));</span><br><span class="line">  msg.msg_iov = vec;</span><br><span class="line">  msg.msg_iovlen = 1;</span><br><span class="line">  msg.msg_control = control_un.control;</span><br><span class="line">  msg.msg_controllen = sizeof(control_un.control);</span><br><span class="line"></span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    int n = recvmsg(sockfd,&amp;msg,0);</span><br><span class="line">    if(n&lt;0)&#123;</span><br><span class="line">      std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">      return -1;</span><br><span class="line">    &#125;else if(n==0)&#123;</span><br><span class="line">      std::cout&lt;&lt;&quot;empty message&quot;&lt;&lt;std::endl;</span><br><span class="line">      continue;</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">      if((cmptr = CMSG_FIRSTHDR(&amp;msg))!= nullptr&amp;&amp;</span><br><span class="line">          cmptr-&gt;cmsg_len == CMSG_LEN(sizeof(int)))&#123;</span><br><span class="line">          if(cmptr-&gt;cmsg_level==SOL_SOCKET&amp;&amp;cmptr-&gt;cmsg_type==SCM_RIGHTS)&#123;</span><br><span class="line">            int fd = *(int*)CMSG_DATA(cmptr);</span><br><span class="line">            std::cout&lt;&lt;fd&lt;&lt;std::endl;</span><br><span class="line">            write(fd,content,strlen(content));</span><br><span class="line">            close(fd);</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，客户端发送的描述符与服务端接收到的描述符虽然指向同一个打开的文件，但是两者的值可能不一样，这是正常的。传递一个描述符并不是传递一个描述符号，而是涉及在接收进程中创建一个新的描述符，这个新的描述符和发送进程中的描述符指向内核中相同的文件表项。发送进程调用sendmsg发送描述符后就关闭该描述符，但是对于接收进程在调用recvmsg之前它仍然是打开状态。发送一个描述符会使该描述符的引用计数加1.</p>
+<p>如果接收进程调用recvmsg时没有分配用于接收描述符的空间，而且之前已经有一个描述符被传递并整等着被读取，这个早先传递的描述符就会被关闭。另外，在期待接收描述符的recvmsg调用中应该避免使用MSG_PEEK标志，否则后果不可预料。</p>
+<p>用户凭证的传递方法跟描述符传递方法一致，只不过msg_control中保存的结构体数组变成了cmsgcred结构体数组,不过由于该特性并没有普及，我的实验环境也没有支持该特性，所以就不多介绍了，以后实际遇到使用场景了再进行补充。</p>
+<p>参考书目：《UNIX网络编程卷1》、《UNIX环境高级编程》</p>
+
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="/about" rel="external nofollow noreferrer">wenxy</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://wxyfq.github.io/2023/01/11/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%8D%81)%EF%BC%9AUnix%E5%9F%9F%E5%8D%8F%E8%AE%AE/">https://wxyfq.github.io/2023/01/11/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%8D%81)%EF%BC%9AUnix%E5%9F%9F%E5%8D%8F%E8%AE%AE/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="/about" target="_blank">wenxy</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
+      document.addEventListener("copy", function (e) {
+        let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
+        M.toast({html: toastHTML})
+      });
+
+      function navToReprintStatement() {
+        $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
+      }
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/Linux/">
+                                    <span class="chip bg-color">Linux</span>
+                                </a>
+                            
+                                <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                                    <span class="chip bg-color">网络编程</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">你的赏识是我前进的动力</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="/medias/reward/alipay.jpeg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="/medias/reward/wechat.JPG" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
+            <div class="card">
+                <a href="/2023/01/11/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%8D%81)%EF%BC%9AUnix%E5%9F%9F%E5%8D%8F%E8%AE%AE/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/0.jpg" class="responsive-img" alt="Linux网络编程(十)：Unix域协议">
+                        
+                        <span class="card-title">Linux网络编程(十)：Unix域协议</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            介绍Unix域协议的使用方法以及使用Unix域协议传递描述符的方法
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2023-01-11
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B9%9D)%EF%BC%9A%E5%B9%BF%E6%92%AD/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="Linux网络编程(九)：广播">
+                        
+                        <span class="card-title">Linux网络编程(九)：广播</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            介绍广播的使用方法
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2023-01-09
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-category">
+                                    Linux网络编程
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+                        <span class="chip bg-color">网络编程</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+
+<!-- 代码块复制 -->
+
+
+<!-- 代码块收缩 -->
+
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+    <div class="container row center-align" style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2019-2023</span>
+            
+            <span id="year">2019</span>
+            <a href="/about" target="_blank">wenxy</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+            &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                class="white-color">67.5k</span>&nbsp;字
+            
+            
+            
+            
+            
+            
+            <span id="busuanzi_container_site_pv">
+                |&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="busuanzi_value_site_pv"
+                    class="white-color"></span>&nbsp;次
+            </span>
+            
+            
+            <span id="busuanzi_container_site_uv">
+                |&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="busuanzi_value_site_uv"
+                    class="white-color"></span>&nbsp;人
+            </span>
+            
+            <br>
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+
+
+    <a href="mailto:919601977@qq.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=919601977" class="tooltipped" target="_blank" data-tooltip="QQ联系我: 919601977" data-position="top" data-delay="50">
+        <i class="fab fa-qq"></i>
+    </a>
+
+
+
+
+
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="/libs/materialize/materialize.min.js"></script>
+    <script src="/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="/libs/aos/aos.js"></script>
+    <script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="/js/matery.js"></script>
+
+    <!-- Baidu Analytics -->
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+    
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+    
+
+	
+    
+
+    
+
+    
+
+    
+    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+</body>
+
+</html>
