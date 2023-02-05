@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="Linux网络编程">
+    <meta name="keywords" content="libevent">
     <meta name="description" content="好记性不如烂笔头">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Linux网络编程(八)：UDP套接字编程 | wenxy的博客</title>
+    <title>libevent学习笔记（一）：基本使用 | wenxy的博客</title>
     <link rel="icon" type="image/png" href="/me.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -203,12 +203,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/21.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/9.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Linux网络编程(八)：UDP套接字编程</h1>
+                    <h1 class="description center-align post-title">libevent学习笔记（一）：基本使用</h1>
                 </div>
             </div>
         </div>
@@ -238,6 +238,10 @@
                                 <span class="chip bg-color">网络编程</span>
                             </a>
                         
+                            <a href="/tags/libevent/">
+                                <span class="chip bg-color">libevent</span>
+                            </a>
+                        
                     </div>
                     
                 </div>
@@ -259,28 +263,28 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2023-01-09
+                    2023-02-05
                 </div>
                 
 
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2023-01-09
+                    2023-02-05
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2.4k
+                    575
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    9 分
+                    2 分
                 </div>
                 
 
@@ -305,41 +309,22 @@
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <p>UDP(User Datagram Protocol)用户数据报协议，是一个无连接协议。与TCP需要先建立连接才能通信不通，UDP不需要建立连接就可以直接发送数据报。回忆TCP服务端和客户端建立连接并通讯的流程，TCP服务端依次调用socket(),bind(),listen(),accept()函数，然后等待客户端连接；TCP客户端则是依次调用socket(),bind()(可选)，connect()连接服务端。TCP服务端接收到TCP客户端的连接请求后，accept()会返回一个已连接套接字描述符供应用程序之后与客户端通信使用。而UDP的通信则简单的多，客户端和服务端的第一步跟TCP相同，也是调用socket()函数创建UDP套接字，服务端接下来会调用bind()函数绑定一个众所周知的端口，接下来客户端和服务端则通过sendto()和recvfrom()两个函数直接进行通信。recvfrom和sendto函数可以用于UDP也可以用于TCP，不过一般很少用于TCP。</p>
-<p>recvfrom和sendto函数的签名如下所示：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">ssize_t recvfrom(int sockfd,void *buff,size_t nbytes,int flags,struct sockaddr *from,socklen_t *addrlen);</span><br><span class="line">ssize_t sendto(int sockfd,const void *buff,size_t nbytes,int flags,const struct sockaddr *to,socklen_t addrlen);</span><br><span class="line">//成功返回读或写的字节数，失败返回-1；</span><br></pre></td></tr></table></figure>
+                <p>libevent的安装比较简单，在linux上可以直接从源进行安装，需要注意的是，用于开发时应该安装dev版本，如在我的ubuntu环境上可以使用命令apt install libenvent-dev进行安装;macOS上可以使用brew install libevent进行安装。也可以从官网下载源码自行编译安装，自行编译时需要自己修改PKG_CONFIG_PATH环境变量以确保pkg-config命令能够搜索到库的安装位置；手写makefile文件的大神可以忽略上述文字。</p>
+<p>接下来我们创建第一个使用libevent的程序，构建工具采用cmake，CMAKELists.txt文件可以这样写：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">cmake_minimum_required(VERSION 3.24)</span><br><span class="line">project(libevent_test)</span><br><span class="line"></span><br><span class="line">set(CMAKE_CXX_STANDARD 11)</span><br><span class="line"></span><br><span class="line">find_package(PkgConfig)</span><br><span class="line">pkg_check_modules(EVENT2 libevent REQUIRED)</span><br><span class="line">include_directories($&#123;EVENT2_INCLUDE_DIRS&#125;)</span><br><span class="line">link_directories($&#123;EVENT2_LIBRARY_DIRS&#125;)</span><br><span class="line">link_libraries($&#123;EVENT2_LIBRARIES&#125;)</span><br><span class="line"></span><br><span class="line">add_executable(libevent_test main.cpp)</span><br></pre></td></tr></table></figure>
 
-<p>sockfd、buff和nbytes等同于read和write函数的三个参数：描述符、指向读入或写出缓冲区的指针和读写字节数。flags表示标志位，可以设置为0，支持的标志位不同的平台有所不同，可以通过man命令查询手册，例如macos13系统目前支持的标志位有：MSG_OOB表示发送带外数据，MSG_PEEK允许查看已可读取的数据并且在查看后不丢弃被查看的数据，MSG_WAITALL表示读取请求书目的数据之前不返回。</p>
-<p>recvfrom的from和addrlen是两个值-结果参数，类似accept函数的最后两个参数。调用前需要调用者填入一个sockaddr结构体的指针以及该结构体的长度，函数成功返回后，结构体会被填入对端的地址，addrlen会被填入对端地址长度，用来告诉是谁发送了UDP数据报或谁发起了TCP连接。</p>
-<p>sendto的to和addrlen是需要调用者填入的，类似connect函数的最后两个参数，表示UDP数据报要发往的地址或与之建立TCP连接的地址以及长度。</p>
-<p>我们知道对于一个TCP连接，如果read返回0值，表示对端已经关闭连接；但是对于UDP来说，写一个长度为0的数据报是可以的，recvfrom返回值是0也是可接受的，因为UDP本身就是无连接的，所以也不需要关闭连接。</p>
-<p>下面我们通过一个简单的例子说明如何使用UDP在客户端和服务端之间发送信息，服务端代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">  struct sockaddr_in server_addr,client_addr;</span><br><span class="line">  socklen_t client_len = sizeof(client_addr);</span><br><span class="line">  int sockfd;</span><br><span class="line">  sockfd = socket(AF_INET,SOCK_DGRAM,0);</span><br><span class="line">  memset(&amp;server_addr,0,sizeof(server_addr));</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9001);</span><br><span class="line">  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line">  bind(sockfd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr));</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    char buff[1024]=&#123;0&#125;;</span><br><span class="line">    int n = recvfrom(sockfd,buff,1024,0,(struct sockaddr*)&amp;client_addr,&amp;client_len);</span><br><span class="line">    std::cout&lt;&lt;&quot;receive:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">    sendto(sockfd,buff,n,0,(struct sockaddr*)&amp;client_addr,client_len);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>main.cpp的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;event2/event.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">void read_cb(evutil_socket_t fd,short what, void *arg)&#123;</span><br><span class="line">  char *str= (char*)arg;</span><br><span class="line">  std::cout&lt;&lt;str&lt;&lt;std::endl;</span><br><span class="line">  char buff[1024];</span><br><span class="line">  int n = read(fd,buff,1024);</span><br><span class="line">  if(n&lt;0)&#123;</span><br><span class="line">    std::cerr&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    return;</span><br><span class="line">  &#125;else if(n==0)&#123;</span><br><span class="line">    std::cerr&lt;&lt;&quot;EOF&quot;&lt;&lt;std::endl;</span><br><span class="line">    return;</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    write(STDOUT_FILENO,buff,n);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">int main() &#123;</span><br><span class="line">  struct event_base *base = event_base_new();</span><br><span class="line">  struct event *read_event = event_new(base,STDIN_FILENO,EV_READ,read_cb,(char*)&quot;read event&quot;);</span><br><span class="line">  event_add(read_event,NULL);</span><br><span class="line">  event_base_dispatch(base);</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>创建一个数据报套接字，然后绑定本地服务器地址端口，服务端的前期准备工作就完成了，接下来只需要从数据报套接字中读取数据报，将数据报内容打印到标准输出后，再将数据报内容发送回客户端。</p>
-<p>接下来是客户端代码：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;sys/socket.h&gt;</span><br><span class="line">#include &lt;netinet/in.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">#include &lt;iostream&gt;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line">  struct sockaddr_in server_addr;</span><br><span class="line">  int sockfd;</span><br><span class="line">  std::string line;</span><br><span class="line">  sockfd = socket(AF_INET,SOCK_DGRAM,0);</span><br><span class="line">  server_addr.sin_family = AF_INET;</span><br><span class="line">  server_addr.sin_port = htons(9001);</span><br><span class="line">  inet_pton(AF_INET,&quot;127.0.0.1&quot;,&amp;server_addr.sin_addr);</span><br><span class="line">  fd_set rset;</span><br><span class="line">  FD_ZERO(&amp;rset);</span><br><span class="line">  for(;;)&#123;</span><br><span class="line">    FD_SET(STDIN_FILENO,&amp;rset);</span><br><span class="line">    FD_SET(sockfd,&amp;rset);</span><br><span class="line">    int maxfd = sockfd+1;</span><br><span class="line">    select(maxfd,&amp;rset, nullptr, nullptr, nullptr);</span><br><span class="line">    if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">      getline(std::cin,line);</span><br><span class="line">      sendto(sockfd,line.c_str(),line.length(),0,(struct sockaddr*)&amp;server_addr,sizeof(server_addr));</span><br><span class="line">    &#125;</span><br><span class="line">    if(FD_ISSET(sockfd,&amp;rset))&#123;</span><br><span class="line">      char buff[1024]=&#123;0&#125;;</span><br><span class="line">      recvfrom(sockfd,buff,1024,0, nullptr, nullptr);</span><br><span class="line">      std::cout&lt;&lt;&quot;echo:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>客户端创建一个数据报套接字和服务器地址结构体，然后使用select监控标准输入和数据报套接字描述符，从标准输入中读取数据后写入数据报套接字，数据报套接字中有数据时，从中读取信息然后输出到标准输出。</p>
-<p>使用上面的代码我们可以在客户端和服务端之间进行简单的UDP通信，现在考虑一种场景，假如通信过程中，服务端程序挂掉了，或者说服务端程序根本就没有启动，会发生什么情况呢？运行代码后发现，在客户端输入信息后，除了没有得到回显信息，什么都没发生！对比TCP连接，如果通信过程中服务端程序异常退出，客户端进程会收到一个EOF，如果服务端没有启动，那么客户端连接时就会报告错误，从中可以看出TCP的错误都是同步发送给客户端进程的；而UDP的错误是异步错误，也就是说sendto函数即使引发了错误，也不会立即返回给进程，甚至它根本就不返回！我们可以做一个简单的验证，对上述客户端代码进行简单的修改：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">  getline(std::cin,line);</span><br><span class="line">  if(sendto(sockfd,line.c_str(),line.length(),0,(struct sockaddr*)&amp;server_addr,sizeof(server_addr))&lt;0)&#123;</span><br><span class="line">    std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">    continue;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>判断sendto函数的返回值，如果返回值小于0表示引发了错误，然后输出错误信息后继续下一个循环。代码修改后，我们不启动服务端，只启动客户端，发现情况跟修改前没有任何区别。其实在这种情况下sendto会引发一个“port unreachable”的ICMP错误，但是这个错误是异步错误且不会返回给进程。</p>
-<p>为什么会这样设计呢？我们假设一个客户端同时跟多个服务端进行通信，由于sendto引发的错误是异步错误，所以sendto函数是会成功返回的。那么错误信息的来源就只剩下recvfrom函数了，假设有一个服务端不可达引发了ICMP错误，客户端进程需要知道是哪个服务端引发的错误，但是recvfrom能返回的信息只有errno，它没有办法返回出错数据报的目的IP地址和UDP端口号。所以在这种情形下即使把ICMP错误返回给进程，也没有任何意义。解决的办法就是对UDP套接字调用connect()。</p>
-<p>对UDP套接字调用connect的结果与TCP连接不同，不会有三路握手过程，不会有连接建立，内核只是检查是否存在立即可知的错误，记录对端的IP地址和端口号（取自connect的参数），然后立即返回到调用进程。调用connect的UDP套接字称为已连接UDP套接字，未调用connect的UDP套接字称为未连接UDP套接字。</p>
-<p>已连接UDP套接字与未连接UDP套接字相比，有三个变化：</p>
-<p>1.可以不用再指定目的IP地址和端口号了，也就是说可以不用使用sendto函数，而直接使用write向套接字描述符中写入数据。写入的内容会自动发送到connect指定的地址和端口；</p>
-<p>2.不用再通过recvfrom获取发送者地址和端口了，可以直接使用read从套接字中读取信息。因为已连接UDP套接字只会接收来自connect地址的数据报，来自其他地址的数据报会被丢弃。所以调用connect后的UDP套接字只能与一端进行通信；</p>
-<p>3.由已连接UDP套接字引发的异步错误会返回给它们所在的进程，而未连接UDP套接字不接收任何异步错误。</p>
-<p>我们先验证第三点，在上面修改的基础上，调用connect对UDP套接字进行连接：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">connect(sockfd,(struct sockaddr*)&amp;server_addr,sizeof(server_addr));</span><br></pre></td></tr></table></figure>
-
-<p>单独运行修改后的客户端程序，输入一行信息后，可以看到错误信息被直接返回：“Socket is already connected”。</p>
-<p>然后我们修改客户端程序，使用write和read函数代替sendto和recvfrom：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">for(;;)&#123;</span><br><span class="line">   FD_SET(STDIN_FILENO,&amp;rset);</span><br><span class="line">   FD_SET(sockfd,&amp;rset);</span><br><span class="line">   int maxfd = sockfd+1;</span><br><span class="line">   select(maxfd,&amp;rset, nullptr, nullptr, nullptr);</span><br><span class="line">   if(FD_ISSET(STDIN_FILENO,&amp;rset))&#123;</span><br><span class="line">     getline(std::cin,line);</span><br><span class="line">     if(write(sockfd,line.c_str(),line.length())&lt;0)&#123;</span><br><span class="line">       std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">       continue;</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   if(FD_ISSET(sockfd,&amp;rset))&#123;</span><br><span class="line">     char buff[1024]=&#123;0&#125;;</span><br><span class="line">     if((read(sockfd,buff,1024))&lt;0)&#123;</span><br><span class="line">       std::cout&lt;&lt;strerror(errno)&lt;&lt;std::endl;</span><br><span class="line">       continue;</span><br><span class="line">     &#125;</span><br><span class="line">     std::cout&lt;&lt;&quot;echo:&quot;&lt;&lt;buff&lt;&lt;std::endl;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>UDP允许发送空数据报，所以read可以不处理返回值为0的情况，只在返回值小于0时返回错误信息。</p>
-<p>参考书目：《UNIX网络编程》</p>
+<p>实现的功能很简单，从标准输入读取输入，然后将读取到的数据写到标准输出。从这个简单的程序我们可以了解libevent的使用方法，分为以下几个步骤：</p>
+<ol>
+<li>创建event_base;</li>
+<li>创建event；</li>
+<li>将创建的event添加到event_base;</li>
+<li>开启事件循环</li>
+</ol>
+<p>event_base负责保存注册的事件并且通过轮询判断哪些事件被激活。通过event_new()函数创建的事件被添加到event_base当中后，随着event_base_dispatch()函数的调用，event_base开始轮询，当某一事件被激活后，该事件的回调函数就会被调用，调用返回后轮询会继续进行。</p>
+<p>使用上述例子中展示的四个函数，已经可以实现很多需求，并且可以代替select、poll、epoll等函数实现更好的跨平台特性，由于libevent的底层实现就是select、poll这些平台相关的api，所以性能方面也不会受到很大的影响。</p>
 
                 
             </div>
@@ -366,7 +351,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://wxyfq.github.io/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AB)%EF%BC%9AUDP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/">https://wxyfq.github.io/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%85%AB)%EF%BC%9AUDP%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BC%96%E7%A8%8B/</a>
+                    <a href="https://wxyfq.github.io/2023/02/05/libevent%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/">https://wxyfq.github.io/2023/02/05/libevent%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -410,6 +395,10 @@
                             
                                 <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
                                     <span class="chip bg-color">网络编程</span>
+                                </a>
+                            
+                                <a href="/tags/libevent/">
+                                    <span class="chip bg-color">libevent</span>
                                 </a>
                             
                         </div>
@@ -579,29 +568,30 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
-                <a href="/2023/01/09/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B9%9D)%EF%BC%9A%E5%B9%BF%E6%92%AD/">
+                <a href="/2023/02/05/libevent%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/8.jpg" class="responsive-img" alt="Linux网络编程(九)：广播">
+                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="libevent学习笔记（一）：基本使用">
                         
-                        <span class="card-title">Linux网络编程(九)：广播</span>
+                        <span class="card-title">libevent学习笔记（一）：基本使用</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍广播的使用方法
+                            介绍libevent的基本使用
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2023-01-09
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2023-02-05
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-bookmark fa-fw icon-category"></i>
@@ -614,6 +604,7 @@
                         </span>
                     </div>
                 </div>
+
                 
                 <div class="card-action article-tags">
                     
@@ -623,6 +614,10 @@
                     
                     <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
                         <span class="chip bg-color">网络编程</span>
+                    </a>
+                    
+                    <a href="/tags/libevent/">
+                        <span class="chip bg-color">libevent</span>
                     </a>
                     
                 </div>
@@ -636,24 +631,24 @@
                 下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
-                <a href="/2022/12/29/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E4%B8%83)%EF%BC%9A%E5%A5%97%E6%8E%A5%E5%AD%97%E9%80%89%E9%A1%B9/">
+                <a href="/2023/01/11/Linux%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B(%E5%8D%81)%EF%BC%9AUnix%E5%9F%9F%E5%8D%8F%E8%AE%AE/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/1.jpg" class="responsive-img" alt="Linux网络编程(七)：套接字选项">
+                        <img src="/medias/featureimages/0.jpg" class="responsive-img" alt="Linux网络编程(十)：Unix域协议">
                         
-                        <span class="card-title">Linux网络编程(七)：套接字选项</span>
+                        <span class="card-title">Linux网络编程(十)：Unix域协议</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
                     <div class="summary block-with-text">
                         
-                            介绍socket套接字选项
+                            介绍Unix域协议的使用方法以及使用Unix域协议传递描述符的方法
                         
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-12-29
+                                <i class="far fa-clock fa-fw icon-date"></i>2023-01-11
                             </span>
                         <span class="publish-author">
                             
